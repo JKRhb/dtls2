@@ -1,0 +1,84 @@
+# Copyright (c) 2021 Famedly GmbH
+# SPDX-License-Identifier: MIT
+
+name: dtls
+description: DTLS provides datagram socket encryption. Implemented using OpenSSL over FFI.
+version: 0.1.0
+repository: https://gitlab.com/famedly/company/frontend/libraries/dtls
+
+environment:
+  sdk: '>=2.13.0 <3.0.0'
+
+dependencies:
+  ffi: ^1.1.0
+
+dev_dependencies:
+  dart_code_metrics: ^4.8.1
+  ffigen: ^4.1.2
+  import_sorter: ^4.6.0
+  lints: ^1.0.0
+  test: ^1.16.0
+
+ffigen:
+  output: 'lib/src/generated/ffi.dart'
+  headers:
+    entry-points:
+      - /usr/include/openssl/ssl.h
+      - /usr/include/openssl/crypto.h
+      - /usr/include/openssl/evp.h
+      - /usr/include/openssl/err.h
+  functions:
+    include:
+      - BIO_ctrl
+      - BIO_new
+      - BIO_read
+      - BIO_s_mem
+      - BIO_write
+      - DTLS_client_method
+      - ERR_get_error
+      - ERR_error_string
+      - SSL_CTX_new
+      - SSL_CTX_set_cipher_list
+      - SSL_CTX_set_default_verify_paths
+      - SSL_CTX_set_verify
+      - SSL_connect
+      - SSL_ctrl
+      - SSL_free
+      - SSL_get0_param
+      - SSL_get_error
+      - SSL_new
+      - SSL_read
+      - SSL_set_bio
+      - SSL_write
+      - X509_VERIFY_PARAM_set1_host
+      - SSL_CTX_get_cert_store
+      - X509_STORE_add_cert
+      - d2i_X509
+      - X509_free
+      - SSL_CTX_free
+  macros:
+    include:
+      - BIO_C_SET_BUF_MEM_EOF_RETURN
+      - SSL_CTRL_SET_TLSEXT_HOSTNAME
+      - SSL_ERROR_SSL
+      - SSL_ERROR_ZERO_RETURN
+      - SSL_VERIFY_NONE
+      - SSL_VERIFY_PEER
+      - TLSEXT_NAMETYPE_host_name
+      - DTLS_CTRL_GET_TIMEOUT
+  structs:
+    include:
+      - timeval
+  unions:
+    include: []
+  enums:
+    include: []
+  globals:
+    include: []
+  unnamed-enums:
+    include: []
+
+import_sorter:
+  comments: false
+  ignored_files:
+    - \/lib\/src\/generated\/*
