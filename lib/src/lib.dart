@@ -9,9 +9,39 @@ import 'generated/ffi.dart';
 
 export 'generated/ffi.dart';
 
-final lib = NativeLibrary(Platform.isIOS
-    ? DynamicLibrary.process()
-    : DynamicLibrary.open('libssl.so'));
+NativeLibrary loadLibSsl() {
+  if (Platform.isIOS) {
+    return NativeLibrary(DynamicLibrary.process());
+  }
+  String? libName;
+
+  if (Platform.isWindows) {
+    libName = 'libssl-1_1-x64.dll';
+  }
+
+  libName ??= 'libssl.so';
+
+  return NativeLibrary(DynamicLibrary.open(libName));
+}
+
+NativeLibrary loadLibCrypto() {
+  if (Platform.isIOS) {
+    return NativeLibrary(DynamicLibrary.process());
+  }
+  String? libName;
+
+  if (Platform.isWindows) {
+    libName = 'libcrypto-1_1-x64.dll';
+  }
+
+  libName ??= 'libcrypto.so';
+
+  return NativeLibrary(DynamicLibrary.open(libName));
+}
+
+final libSsl = loadLibSsl();
+
+final libCrypto = loadLibCrypto();
 
 extension DurationTimeval on timeval {
   Duration get duration =>
