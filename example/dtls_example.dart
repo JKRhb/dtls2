@@ -10,13 +10,19 @@ import 'dart:io';
 final ctx = DtlsClientContext(
   verify: true,
   withTrustedRoots: true,
-  ciphers: 'aRSA',
+  ciphers: 'PSK-AES128-CCM8',
+  pskCredentialsCallback: (identityHint) {
+    return PskCredentials(
+      identity: Uint8List.fromList(utf8.encode("Client_identity")),
+      preSharedKey: Uint8List.fromList(utf8.encode("secretPSK")),
+    );
+  },
 );
 
 void main() async {
-  final hostname = 'example.com';
+  final hostname = 'californium.eclipseprojects.io';
   final peerAddr = (await InternetAddress.lookup(hostname)).first;
-  final peerPort = 4444;
+  final peerPort = 5684;
 
   final sock = await RawDatagramSocket.bind('::', 0);
   final dtls = DtlsClientConnection(context: ctx, hostname: hostname);

@@ -12,11 +12,32 @@ import 'package:ffi/ffi.dart';
 
 import 'lib.dart';
 
+const pskErrorCode = 0;
+
+typedef _PskCallbackFunction = Uint32 Function(
+    Pointer<SSL>, Pointer<Int8>, Pointer<Int8>, Uint32, Pointer<Uint8>, Uint32);
+
+typedef PskCredentialsCallback = PskCredentials Function(
+  Uint8List identityHint,
+);
+
+/// Credentials used for PSK Cipher Suites consisting of an [identity]
+/// and a [preSharedKey].
+class PskCredentials {
+  Uint8List identity;
+
+  Uint8List preSharedKey;
+
+  PskCredentials({required this.identity, required this.preSharedKey});
+}
+
 /// The context contains settings for DTLS session establishment.
 ///
 /// Wrapper for `SSL_CTX`.
 class DtlsClientContext {
   Pointer<SSL_CTX> _ctx = libSsl.SSL_CTX_new(libSsl.DTLS_client_method());
+
+  final PskCredentialsCallback? _pskCredentialsCallback;
 
   void _addRoots(List<Uint8List> certs) {
     if (certs.isEmpty) return;
@@ -51,7 +72,8 @@ class DtlsClientContext {
     bool withTrustedRoots = false,
     List<Uint8List> rootCertificates = const [],
     String? ciphers,
-  }) {
+    PskCredentialsCallback? pskCredentialsCallback,
+  }) : _pskCredentialsCallback = pskCredentialsCallback {
     if (withTrustedRoots) {
       libSsl.SSL_CTX_set_default_verify_paths(_ctx);
     }
@@ -104,11 +126,79 @@ class DtlsClientConnection {
 
   Timer? _timer;
 
+  final DtlsClientContext _context;
+
+  static Uint8List _determineIdentityHint(
+    Pointer<Int8> hint,
+    int maxIdentityLength,
+  ) {
+    if (hint == nullptr) {
+      return Uint8List(0);
+    }
+
+    final identityHintBytes = <int>[];
+    const nullTerminator = 0;
+    var index = 0;
+
+    while (index < maxIdentityLength) {
+      final currentValue = hint.elementAt(index).value;
+      identityHintBytes.add(currentValue);
+
+      if (currentValue == nullTerminator) {
+        break;
+      }
+
+      index++;
+    }
+
+    return Uint8List.fromList(identityHintBytes);
+  }
+
+  static int _pskCallback(
+      Pointer<SSL> ssl,
+      Pointer<Int8> hint,
+      Pointer<Int8> identity,
+      int maxIdentityLength,
+      Pointer<Uint8> psk,
+      int maxPskLength) {
+    final connection = DtlsClientConnection._connections[ssl.address];
+    if (connection == null) {
+      throw StateError("No DTLS Connection found for SSL object!");
+    }
+
+    final identityHint = _determineIdentityHint(hint, maxIdentityLength);
+
+    final pskCredentials =
+        connection._context._pskCredentialsCallback?.call(identityHint);
+
+    if (pskCredentials == null) {
+      return pskErrorCode;
+    }
+
+    final connectionIdentity = pskCredentials.identity;
+    final connectionPsk = pskCredentials.preSharedKey;
+
+    if (connectionIdentity.lengthInBytes > maxIdentityLength ||
+        connectionPsk.lengthInBytes > maxPskLength) {
+      return pskErrorCode;
+    }
+
+    identity
+        .asTypedList(connectionIdentity.lengthInBytes)
+        .setAll(0, connectionIdentity);
+    psk.asTypedList(connectionPsk.lengthInBytes).setAll(0, connectionPsk);
+    return connectionPsk.lengthInBytes;
+  }
+
+  static final Map<int, DtlsClientConnection> _connections = {};
+
   /// Create a [DtlsClientConnection] using a [DtlsClientContext].
   /// The [hostname] is used for Server Name Indication
   /// and to verify the certificate.
   DtlsClientConnection({required DtlsClientContext context, String? hostname})
-      : _ssl = libSsl.SSL_new(context._ctx) {
+      : _ssl = libSsl.SSL_new(context._ctx),
+        _context = context {
+    _connections[_ssl.address] = this;
     libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
     libCrypto.BIO_ctrl(_rbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr);
     libCrypto.BIO_ctrl(_wbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr);
@@ -121,6 +211,15 @@ class DtlsClientConnection {
           TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
       malloc.free(hostnameStr);
     }
+
+    if (context._pskCredentialsCallback == null) {
+      return;
+    }
+
+    Pointer<NativeFunction<_PskCallbackFunction>> _callback =
+        Pointer.fromFunction(_pskCallback, pskErrorCode);
+
+    libSsl.SSL_set_psk_client_callback(_ssl, _callback);
   }
 
   void _handleError(int ret, void Function(Exception) errorHandler) {
@@ -199,6 +298,7 @@ class DtlsClientConnection {
   void free() {
     _timer?.cancel();
     libSsl.SSL_free(_ssl);
+    _connections.remove(_ssl.address);
     _ssl = nullptr;
     _rbio = nullptr;
     _wbio = nullptr;
