@@ -21,7 +21,8 @@ final ctx = DtlsClientContext(
 
 void main() async {
   final hostname = 'californium.eclipseprojects.io';
-  final peerAddr = (await InternetAddress.lookup(hostname)).first;
+  final peerAddr = InternetAddress.tryParse(hostname) ??
+      (await InternetAddress.lookup(hostname)).first;
   final peerPort = 5684;
 
   final sock = await RawDatagramSocket.bind('::', 0);
