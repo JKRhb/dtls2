@@ -1,7 +1,9 @@
-# dtls
+# dtls2
 
 DTLS provides datagram socket encryption. Implemented using OpenSSL over FFI.
 This package supports native platforms only, because there are no datagram sockets on Web.
+It is based on the [`dtls`](https://pub.dev/packages/dtls) package which was
+discontinued by its maintainers.
 
 ## Features
 

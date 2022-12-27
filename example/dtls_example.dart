@@ -1,7 +1,8 @@
+// Copyright (c) 2022 Jan Romann
 // Copyright (c) 2021 Famedly GmbH
 // SPDX-License-Identifier: MIT
 
-import 'package:dtls/dtls.dart';
+import 'package:dtls2/dtls2.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:io';

@@ -1,10 +1,11 @@
+# Copyright (c) 2022 Jan Romann
 # Copyright (c) 2021 Famedly GmbH
 # SPDX-License-Identifier: MIT
 
-name: dtls
+name: dtls2
 description: DTLS provides datagram socket encryption. Implemented using OpenSSL over FFI.
 version: 0.1.0
-repository: https://gitlab.com/famedly/company/frontend/libraries/dtls
+repository: https://github.com/JKRhb/dtls2
 
 environment:
   sdk: '>=2.13.0 <3.0.0'
