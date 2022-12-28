@@ -53,6 +53,7 @@ ffigen:
       - SSL_write
       - X509_VERIFY_PARAM_set1_host
       - SSL_CTX_get_cert_store
+      - SSL_set_psk_client_callback
       - X509_STORE_add_cert
       - d2i_X509
       - X509_free
