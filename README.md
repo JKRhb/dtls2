@@ -15,6 +15,7 @@ libssl (OpenSSL) needs to be available.
 
 - On Android and iOS, libssl has to be bundled with the app.
 - On Linux, libssl is preinstalled or available in most distributions.
+- On Windows, libssl 1.1.1 (`libssl-1_1-x64.dll`) needs to be installed or bundled with the application
 
 ## Usage
 
