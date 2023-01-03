@@ -206,7 +206,7 @@ class DtlsClientConnection {
     if (hostname != null) {
       final hostnameStr = hostname.toNativeUtf8();
       libCrypto.X509_VERIFY_PARAM_set1_host(
-          libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), 0);
+          libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), nullptr);
       libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
           TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
       malloc.free(hostnameStr);
