@@ -58,6 +58,7 @@ ffigen:
       - d2i_X509
       - X509_free
       - SSL_CTX_free
+      - SSL_CTX_set_info_callback
   macros:
     include:
       - BIO_C_SET_BUF_MEM_EOF_RETURN
@@ -68,6 +69,8 @@ ffigen:
       - SSL_VERIFY_PEER
       - TLSEXT_NAMETYPE_host_name
       - DTLS_CTRL_GET_TIMEOUT
+      - SSL_AD_CLOSE_NOTIFY
+      - SSL3_AL_FATAL
   structs:
     include:
       - timeval
