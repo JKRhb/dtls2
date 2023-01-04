@@ -86,7 +86,7 @@ class DtlsClient {
       if (event == RawSocketEvent.read) {
         final data = _socket.receive();
         if (data != null) {
-          for (final connection in _connections.values) {
+          for (final connection in _connectionCache.values) {
             _incoming(data.data, connection);
           }
         }
@@ -105,11 +105,11 @@ class DtlsClient {
   final Pointer<SSL_CTX> _sslContext;
 
   /// Maps combinations of [InternetAddress]es and ports to
-  /// [_DtlsClientConnection]s.
-  static final Map<String, _DtlsClientConnection> _connections = {};
+  /// [_DtlsClientConnection]s to enable caching for this client.
+  final Map<String, _DtlsClientConnection> _connectionCache = {};
 
-  /// Maps OpenSSL sessions to combinations of [InternetAddress]es and ports.
-  static final Map<int, String> _sessions = {};
+  /// Maps OpenSSL sessions to [_DtlsClientConnection]s.
+  static final Map<int, _DtlsClientConnection> _connections = {};
 
   /// Closes this [DtlsClient].
   ///
@@ -120,12 +120,12 @@ class DtlsClient {
       return;
     }
 
-    for (final connection in _connections.values) {
+    for (final connection in _connectionCache.values) {
+      _connections.remove(connection._ssl.address);
       connection.close(closedByClient: true);
     }
 
-    _connections.clear();
-    _sessions.clear();
+    _connectionCache.clear();
     if (!_externalSocket || closeExternalSocket) {
       _socket.close();
     }
@@ -149,7 +149,7 @@ class DtlsClient {
   }) async {
     final key = getConnectionKey(address, port);
 
-    final existingConnection = _connections[key];
+    final existingConnection = _connectionCache[key];
 
     if (existingConnection != null && !existingConnection._closed) {
       return existingConnection;
@@ -236,8 +236,8 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     final connection = _DtlsClientConnection(
         dtlsClient, hostname, address, port, context, ssl);
     final key = getConnectionKey(address, port);
-    DtlsClient._connections[key] = connection;
-    DtlsClient._sessions[ssl.address] = key;
+    dtlsClient._connectionCache[key] = connection;
+    DtlsClient._connections[ssl.address] = connection;
     return connection._connect();
   }
 
@@ -299,8 +299,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       int maxIdentityLength,
       Pointer<Uint8> psk,
       int maxPskLength) {
-    final address = DtlsClient._sessions[ssl.address];
-    final connection = DtlsClient._connections[address];
+    final connection = DtlsClient._connections[ssl.address];
 
     if (connection == null) {
       throw StateError("No DTLS Connection found for SSL object!");
@@ -340,8 +339,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     int where,
     int ret,
   ) {
-    final address = DtlsClient._sessions[ssl.address];
-    final connection = DtlsClient._connections[address];
+    final connection = DtlsClient._connections[ssl.address];
 
     if (connection == null) {
       throw StateError("No DTLS Connection found for SSL object!");
@@ -410,8 +408,8 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
     if (!closedByClient) {
       // This distinction is made to avoid concurrent modification errors.
-      final address = DtlsClient._sessions.remove(_ssl.address);
-      DtlsClient._connections.remove(address);
+      final address = DtlsClient._connections.remove(_ssl.address);
+      _dtlsClient._connectionCache.remove(address);
     }
 
     libSsl.SSL_free(_ssl);
