@@ -190,6 +190,28 @@ class DtlsClientConnection {
     return connectionPsk.lengthInBytes;
   }
 
+  static bool _isFatalAlert(int ret) => ret << 8 == SSL3_AL_FATAL;
+  static bool _isCloseNotify(int ret) => ret & 0xff == SSL_AD_CLOSE_NOTIFY;
+  static bool _requiresClosing(int ret) =>
+      _isFatalAlert(ret) || _isCloseNotify(ret);
+
+  static void _infoCallback(
+    Pointer<SSL> ssl,
+    int where,
+    int ret,
+  ) {
+    final connection = DtlsClientConnection._connections[ssl.address];
+
+    if (connection == null) {
+      throw StateError("No DTLS Connection found for SSL object!");
+    }
+
+    if (_requiresClosing(ret)) {
+      connection._received.close();
+      connection.free();
+    }
+  }
+
   static final Map<int, DtlsClientConnection> _connections = {};
 
   /// Create a [DtlsClientConnection] using a [DtlsClientContext].
@@ -206,11 +228,16 @@ class DtlsClientConnection {
     if (hostname != null) {
       final hostnameStr = hostname.toNativeUtf8();
       libCrypto.X509_VERIFY_PARAM_set1_host(
-          libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), 0);
+          libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), nullptr);
       libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
           TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
       malloc.free(hostnameStr);
     }
+
+    libSsl.SSL_CTX_set_info_callback(
+      context._ctx,
+      Pointer.fromFunction(_infoCallback),
+    );
 
     if (context._pskCredentialsCallback == null) {
       return;
