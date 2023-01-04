@@ -31,10 +31,10 @@ void main() async {
   final connection = await dtlsClient.connect(peerAddr, peerPort);
 
   connection
-    ..listen((datagram) {
+    ..listen((datagram) async {
       print('> ${utf8.decode(datagram.data)}');
-      connection.close();
       print('Connection closed');
+      await connection.close();
     }, onDone: () {
       dtlsClient.close();
       print('Client closed');

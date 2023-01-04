@@ -19,5 +19,5 @@ abstract class DtlsConnection extends Stream<Datagram> {
   int send(List<int> data);
 
   /// Closes this [DtlsConnection].
-  void close();
+  Future<void> close();
 }
