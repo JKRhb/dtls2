@@ -9,6 +9,7 @@ import 'generated/ffi.dart';
 
 export 'generated/ffi.dart';
 
+/// Loads libssl as a [NativeLibrary].
 NativeLibrary loadLibSsl() {
   if (Platform.isIOS) {
     return NativeLibrary(DynamicLibrary.process());
@@ -24,6 +25,7 @@ NativeLibrary loadLibSsl() {
   return NativeLibrary(DynamicLibrary.open(libName));
 }
 
+/// Loads libcrypto as a [NativeLibrary].
 NativeLibrary loadLibCrypto() {
   if (Platform.isIOS) {
     return NativeLibrary(DynamicLibrary.process());
@@ -39,11 +41,8 @@ NativeLibrary loadLibCrypto() {
   return NativeLibrary(DynamicLibrary.open(libName));
 }
 
+/// The global libssl object.
 final libSsl = loadLibSsl();
 
+/// The global libcrypto object.
 final libCrypto = loadLibCrypto();
-
-extension DurationTimeval on timeval {
-  Duration get duration =>
-      Duration(seconds: tv_sec) + Duration(microseconds: tv_usec);
-}

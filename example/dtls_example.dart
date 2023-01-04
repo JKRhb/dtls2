@@ -2,12 +2,13 @@
 // Copyright (c) 2021 Famedly GmbH
 // SPDX-License-Identifier: MIT
 
-import 'package:dtls2/dtls2.dart';
-import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
-final ctx = DtlsClientContext(
+import 'package:dtls2/dtls2.dart';
+
+final context = DtlsClientContext(
   verify: true,
   withTrustedRoots: true,
   ciphers: 'PSK-AES128-CCM8',
@@ -25,25 +26,18 @@ void main() async {
       (await InternetAddress.lookup(hostname)).first;
   final peerPort = 5684;
 
-  final sock = await RawDatagramSocket.bind('::', 0);
-  final dtls = DtlsClientConnection(context: ctx, hostname: hostname);
-  sock.listen((ev) async {
-    if (ev == RawSocketEvent.read) {
-      final d = sock.receive();
-      if (d != null) {
-        dtls.incoming(d.data);
-      }
-    }
-  });
-  dtls.outgoing.listen((d) => sock.send(d, peerAddr, peerPort));
+  final dtlsClient = await DtlsClient.bind('::', 0, context);
 
-  // dtls.received should be processed by the appliction.
-  // In this example, simply print the plaintext.
-  dtls.received.listen((m) => print('> ${utf8.decode(m)}'),
-      onDone: () => print('connection closed'));
+  final connection = await dtlsClient.connect(peerAddr, peerPort);
 
-  // The connection needs to be established before data can be sent.
-  await dtls.connect();
-
-  dtls.send(Uint8List.fromList(utf8.encode('Hello World')));
+  connection
+    ..listen((datagram) {
+      print('> ${utf8.decode(datagram.data)}');
+      connection.close();
+      print('Connection closed');
+    }, onDone: () {
+      dtlsClient.close();
+      print('Client closed');
+    })
+    ..send(Uint8List.fromList(utf8.encode('Hello World')));
 }
