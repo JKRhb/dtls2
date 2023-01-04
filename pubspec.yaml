@@ -4,7 +4,7 @@
 
 name: dtls2
 description: DTLS provides datagram socket encryption. Implemented using OpenSSL over FFI.
-version: 0.2.0
+version: 0.2.1
 repository: https://github.com/JKRhb/dtls2
 
 environment:

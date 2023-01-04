@@ -1,3 +1,7 @@
+## 0.2.1
+
+- fix: call BIO_free on the correct NativeLibrary object
+
 ## 0.2.0
 
 - feat: define callback for handling DTLS alerts
