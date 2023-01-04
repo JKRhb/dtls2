@@ -408,8 +408,8 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       DtlsClient._connections.remove(address);
     }
 
-    libSsl
-      ..SSL_free(_ssl)
+    libSsl.SSL_free(_ssl);
+    libCrypto
       ..BIO_free(_rbio)
       ..BIO_free(_wbio);
     _ssl = nullptr;
