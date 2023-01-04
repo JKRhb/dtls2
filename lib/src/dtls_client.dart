@@ -115,14 +115,14 @@ class DtlsClient {
   ///
   /// [RawDatagramSocket]s that have been passed in by the user are only closed
   /// if [closeExternalSocket] is set to `true`.
-  void close({bool closeExternalSocket = false}) {
+  Future<void> close({bool closeExternalSocket = false}) async {
     if (_closed) {
       return;
     }
 
     for (final connection in _connectionCache.values) {
       _connections.remove(connection._ssl.address);
-      connection.close(closedByClient: true);
+      await connection.close(closedByClient: true);
     }
 
     _connectionCache.clear();
@@ -404,7 +404,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
 
     _timer?.cancel();
-    await _received.close();
 
     if (!closedByClient) {
       // This distinction is made to avoid concurrent modification errors.
@@ -416,6 +415,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
     _closed = true;
     _connected = false;
+    await _received.close();
   }
 
   void _maintainOutgoing() {
