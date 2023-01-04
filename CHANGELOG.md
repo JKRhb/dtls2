@@ -1,3 +1,7 @@
+## 0.2.2
+
+- chore: rename example file
+
 ## 0.2.1
 
 - fix: call BIO_free on the correct NativeLibrary object
