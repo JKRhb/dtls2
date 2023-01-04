@@ -1,3 +1,9 @@
+## 0.3.0
+
+- feat!: improve memory safety of DtlsClientContext
+- fix: fix caching of DTLS connections in clients
+- fix!: make connection closing asynchronous
+
 ## 0.2.2
 
 - chore: rename example file
