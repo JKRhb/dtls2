@@ -10,6 +10,5 @@ void main() {
     final context = DtlsClientContext();
     final dtlsClient = await DtlsClient.bind("::", 0, context);
     dtlsClient.close();
-    context.free();
   });
 }

@@ -52,7 +52,8 @@ extension _DurationTimeval on timeval {
 class DtlsClient {
   /// Creates a new [DtlsClient] that uses a pre-existing [RawDatagramSocket]
   /// and a [_context] for establishing [DtlsConnection]s.
-  DtlsClient(this._socket, this._context) {
+  DtlsClient(this._socket, this._context)
+      : _sslContext = _context._generateSslContext() {
     _startListening();
   }
 
@@ -101,6 +102,8 @@ class DtlsClient {
 
   final DtlsClientContext _context;
 
+  final Pointer<SSL_CTX> _sslContext;
+
   /// Maps combinations of [InternetAddress]es and ports to
   /// [_DtlsClientConnection]s.
   static final Map<String, _DtlsClientConnection> _connections = {};
@@ -126,6 +129,8 @@ class DtlsClient {
     if (!_externalSocket || closeExternalSocket) {
       _socket.close();
     }
+
+    libSsl.SSL_CTX_free(_sslContext);
 
     _closed = true;
   }
@@ -188,9 +193,9 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     String? hostname,
     this._address,
     this._port,
-    this._context,
+    DtlsClientContext context,
     this._ssl,
-  ) {
+  ) : _pskCredentialsCallback = context._pskCredentialsCallback {
     libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
     libCrypto
       ..BIO_ctrl(_rbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr)
@@ -206,11 +211,11 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
 
     libSsl.SSL_CTX_set_info_callback(
-      _context._ctx,
+      _dtlsClient._sslContext,
       Pointer.fromFunction(_infoCallback),
     );
 
-    if (_context._pskCredentialsCallback == null) {
+    if (_pskCredentialsCallback == null) {
       return;
     }
 
@@ -227,7 +232,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     int port,
     DtlsClientContext context,
   ) {
-    final ssl = libSsl.SSL_new(context._ctx);
+    final ssl = libSsl.SSL_new(dtlsClient._sslContext);
     final connection = _DtlsClientConnection(
         dtlsClient, hostname, address, port, context, ssl);
     final key = getConnectionKey(address, port);
@@ -238,7 +243,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   bool _closed = false;
 
-  Pointer<SSL> _ssl;
+  final Pointer<SSL> _ssl;
 
   final InternetAddress _address;
 
@@ -246,19 +251,20 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   final Completer<_DtlsClientConnection> _connectCompleter = Completer();
 
-  Pointer<BIO> _rbio = libCrypto.BIO_new(libCrypto.BIO_s_mem());
-  Pointer<BIO> _wbio = libCrypto.BIO_new(libCrypto.BIO_s_mem());
+  final Pointer<BIO> _rbio = libCrypto.BIO_new(libCrypto.BIO_s_mem());
+
+  final Pointer<BIO> _wbio = libCrypto.BIO_new(libCrypto.BIO_s_mem());
 
   final _received = StreamController<Datagram>();
 
   bool _connected = false;
 
+  final PskCredentialsCallback? _pskCredentialsCallback;
+
   @override
   bool get connected => _connected;
 
   Timer? _timer;
-
-  final DtlsClientContext _context;
 
   static Uint8List _determineIdentityHint(
     Pointer<Int8> hint,
@@ -303,7 +309,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     final identityHint = _determineIdentityHint(hint, maxIdentityLength);
 
     final pskCredentials =
-        connection._context._pskCredentialsCallback?.call(identityHint);
+        connection._pskCredentialsCallback?.call(identityHint);
 
     if (pskCredentials == null) {
       return _pskErrorCode;
@@ -409,12 +415,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
 
     libSsl.SSL_free(_ssl);
-    libCrypto
-      ..BIO_free(_rbio)
-      ..BIO_free(_wbio);
-    _ssl = nullptr;
-    _rbio = nullptr;
-    _wbio = nullptr;
 
     _closed = true;
     _connected = false;
@@ -474,30 +474,28 @@ class DtlsClientContext {
     List<Uint8List> rootCertificates = const [],
     String? ciphers,
     PskCredentialsCallback? pskCredentialsCallback,
-  }) : _pskCredentialsCallback = pskCredentialsCallback {
-    if (withTrustedRoots) {
-      libSsl.SSL_CTX_set_default_verify_paths(_ctx);
-    }
-    _addRoots(rootCertificates);
-    libSsl.SSL_CTX_set_verify(
-        _ctx, verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, nullptr);
-    if (ciphers != null) {
-      final ciphersStr = ciphers.toNativeUtf8();
-      libSsl.SSL_CTX_set_cipher_list(_ctx, ciphersStr.cast());
-      malloc.free(ciphersStr);
-    }
-  }
+  })  : _pskCredentialsCallback = pskCredentialsCallback,
+        _withTrustedRoots = withTrustedRoots,
+        _verify = verify,
+        _rootCertificates = rootCertificates,
+        _ciphers = ciphers;
 
-  Pointer<SSL_CTX> _ctx = libSsl.SSL_CTX_new(libSsl.DTLS_client_method());
+  final bool _withTrustedRoots;
+
+  final bool _verify;
 
   final PskCredentialsCallback? _pskCredentialsCallback;
 
-  void _addRoots(List<Uint8List> certs) {
+  final List<Uint8List> _rootCertificates;
+
+  final String? _ciphers;
+
+  void _addRoots(List<Uint8List> certs, Pointer<SSL_CTX> ctx) {
     if (certs.isEmpty) return;
     final bufLen = certs.map((c) => c.length).reduce(max);
     final buf = malloc.call<Uint8>(bufLen);
     final data = malloc.call<Pointer<Uint8>>(1);
-    final store = libSsl.SSL_CTX_get_cert_store(_ctx);
+    final store = libSsl.SSL_CTX_get_cert_store(ctx);
 
     for (final cert in certs) {
       buf.asTypedList(bufLen).setAll(0, cert);
@@ -513,10 +511,24 @@ class DtlsClientContext {
       ..free(buf);
   }
 
-  /// Free the object. Use after free triggers undefined behavior.
-  /// This does not affect any existing [_DtlsClientConnection].
-  void free() {
-    libSsl.SSL_CTX_free(_ctx);
-    _ctx = nullptr;
+  Pointer<SSL_CTX> _generateSslContext() {
+    final ctx = libSsl.SSL_CTX_new(libSsl.DTLS_client_method());
+
+    if (_withTrustedRoots) {
+      libSsl.SSL_CTX_set_default_verify_paths(ctx);
+    }
+
+    _addRoots(_rootCertificates, ctx);
+    libSsl.SSL_CTX_set_verify(
+        ctx, _verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, nullptr);
+
+    final ciphers = _ciphers;
+    if (ciphers != null) {
+      final ciphersStr = ciphers.toNativeUtf8();
+      libSsl.SSL_CTX_set_cipher_list(ctx, ciphersStr.cast());
+      malloc.free(ciphersStr);
+    }
+
+    return ctx;
   }
 }
