@@ -29,6 +29,10 @@ ffigen:
       - /usr/include/openssl/crypto.h
       - /usr/include/openssl/evp.h
       - /usr/include/openssl/err.h
+  preamble: |
+    // ignore_for_file: camel_case_types, non_constant_identifier_names
+    // ignore_for_file: constant_identifier_names, public_member_api_docs
+    // ignore_for_file: unused_field, lines_longer_than_80_chars
   functions:
     include:
       - BIO_ctrl
@@ -36,6 +40,7 @@ ffigen:
       - BIO_read
       - BIO_s_mem
       - BIO_write
+      - BIO_free
       - DTLS_client_method
       - ERR_get_error
       - ERR_error_string
