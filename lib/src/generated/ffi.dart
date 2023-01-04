@@ -33,6 +33,20 @@ class NativeLibrary {
   late final _BIO_new = _BIO_newPtr.asFunction<
       ffi.Pointer<BIO> Function(ffi.Pointer<BIO_METHOD>)>();
 
+  int BIO_free(
+    ffi.Pointer<BIO> a,
+  ) {
+    return _BIO_free(
+      a,
+    );
+  }
+
+  late final _BIO_freePtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<BIO>)>>(
+          'BIO_free');
+  late final _BIO_free =
+      _BIO_freePtr.asFunction<int Function(ffi.Pointer<BIO>)>();
+
   int BIO_read(
     ffi.Pointer<BIO> b,
     ffi.Pointer<ffi.Void> data,

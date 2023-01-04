@@ -36,6 +36,7 @@ ffigen:
       - BIO_read
       - BIO_s_mem
       - BIO_write
+      - BIO_free
       - DTLS_client_method
       - ERR_get_error
       - ERR_error_string
