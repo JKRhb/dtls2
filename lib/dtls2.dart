@@ -4,4 +4,5 @@
 
 export 'src/dtls_client.dart';
 export 'src/dtls_connection.dart';
+export 'src/openssl_load_exception.dart';
 export 'src/psk_credentials.dart';
