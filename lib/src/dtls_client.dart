@@ -12,7 +12,8 @@ import 'package:dtls2/src/dtls_connection.dart';
 import 'package:ffi/ffi.dart';
 
 import 'dtls_exception.dart';
-import 'lib.dart';
+import 'generated/ffi.dart';
+import 'lib.dart' as lib;
 import 'psk_credentials.dart';
 import 'util.dart';
 
@@ -52,8 +53,17 @@ extension _DurationTimeval on timeval {
 class DtlsClient {
   /// Creates a new [DtlsClient] that uses a pre-existing [RawDatagramSocket]
   /// and a [_context] for establishing [DtlsConnection]s.
-  DtlsClient(this._socket, this._context)
-      : _sslContext = _context._generateSslContext() {
+  ///
+  /// If you want to load [libSsl] or [libCrypto] yourself (e.g., from a custom
+  /// path), you can pass custom [NativeLibrary] objects to this constructor.
+  DtlsClient(
+    this._socket,
+    this._context, {
+    NativeLibrary? libSsl,
+    NativeLibrary? libCrypto,
+  })  : _sslContext = _context._generateSslContext(libSsl ?? lib.libSsl),
+        _libSsl = libSsl ?? lib.libSsl,
+        _libCrypto = libCrypto ?? lib.libCrypto {
     _startListening();
   }
 
@@ -62,6 +72,9 @@ class DtlsClient {
   ///
   /// Uses a [RawDatagramSocket] internally and passes the [host], [port],
   /// [reusePort], [reuseAddress], and [ttl] arguments to it.
+  ///
+  /// If you want to load [libSsl] or [libCrypto] yourself (e.g., from a custom
+  /// path), you can pass custom [NativeLibrary] objects to this constructor.
   static Future<DtlsClient> bind(
     dynamic host,
     int port,
@@ -69,6 +82,8 @@ class DtlsClient {
     bool reuseAddress = true,
     bool reusePort = false,
     int ttl = 1,
+    NativeLibrary? libSsl,
+    NativeLibrary? libCrypto,
   }) async {
     final socket = await RawDatagramSocket.bind(
       host,
@@ -78,7 +93,8 @@ class DtlsClient {
       ttl: ttl,
     );
 
-    return DtlsClient(socket, context).._externalSocket = false;
+    return DtlsClient(socket, context, libSsl: libSsl, libCrypto: libCrypto)
+      .._externalSocket = false;
   }
 
   void _startListening() {
@@ -111,6 +127,10 @@ class DtlsClient {
   /// Maps OpenSSL sessions to [_DtlsClientConnection]s.
   static final Map<int, _DtlsClientConnection> _connections = {};
 
+  final NativeLibrary _libSsl;
+
+  final NativeLibrary _libCrypto;
+
   /// Closes this [DtlsClient].
   ///
   /// [RawDatagramSocket]s that have been passed in by the user are only closed
@@ -130,7 +150,7 @@ class DtlsClient {
       _socket.close();
     }
 
-    libSsl.SSL_CTX_free(_sslContext);
+    _libSsl.SSL_CTX_free(_sslContext);
 
     _closed = true;
   }
@@ -156,25 +176,20 @@ class DtlsClient {
     }
 
     final connection = await _DtlsClientConnection.connect(
-      this,
-      hostname,
-      address,
-      port,
-      _context,
-    );
+        this, hostname, address, port, _context, _libCrypto, _libSsl);
 
     return connection;
   }
 
   void _incoming(Uint8List input, _DtlsClientConnection connection) {
     _buffer.asTypedList(_bufferSize).setAll(0, input);
-    libCrypto.BIO_write(connection._rbio, _buffer.cast(), input.length);
+    _libCrypto.BIO_write(connection._rbio, _buffer.cast(), input.length);
     connection._maintainState();
   }
 
   int _send(_DtlsClientConnection _dtlsClientConnection, List<int> data) {
     _buffer.asTypedList(_bufferSize).setAll(0, data);
-    final ret = libSsl.SSL_write(
+    final ret = _libSsl.SSL_write(
         _dtlsClientConnection._ssl, _buffer.cast(), data.length);
     _dtlsClientConnection._maintainOutgoing();
     if (ret < 0) {
@@ -195,22 +210,26 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     this._port,
     DtlsClientContext context,
     this._ssl,
-  ) : _pskCredentialsCallback = context._pskCredentialsCallback {
-    libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
-    libCrypto
+    this._libCrypto,
+    this._libSsl,
+  )   : _pskCredentialsCallback = context._pskCredentialsCallback,
+        _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
+        _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()) {
+    _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
+    _libCrypto
       ..BIO_ctrl(_rbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr)
       ..BIO_ctrl(_wbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr);
 
     if (hostname != null) {
       final hostnameStr = hostname.toNativeUtf8();
-      libCrypto.X509_VERIFY_PARAM_set1_host(
-          libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), nullptr);
-      libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
+      _libCrypto.X509_VERIFY_PARAM_set1_host(
+          _libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), nullptr);
+      _libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
           TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
       malloc.free(hostnameStr);
     }
 
-    libSsl.SSL_CTX_set_info_callback(
+    _libSsl.SSL_CTX_set_info_callback(
       _dtlsClient._sslContext,
       Pointer.fromFunction(_infoCallback),
     );
@@ -222,7 +241,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     final Pointer<NativeFunction<_PskCallbackFunction>> _callback =
         Pointer.fromFunction(_pskCallback, _pskErrorCode);
 
-    libSsl.SSL_set_psk_client_callback(_ssl, _callback);
+    _libSsl.SSL_set_psk_client_callback(_ssl, _callback);
   }
 
   static Future<_DtlsClientConnection> connect(
@@ -231,10 +250,20 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     InternetAddress address,
     int port,
     DtlsClientContext context,
+    NativeLibrary libCrypto,
+    NativeLibrary libSsl,
   ) {
     final ssl = libSsl.SSL_new(dtlsClient._sslContext);
     final connection = _DtlsClientConnection(
-        dtlsClient, hostname, address, port, context, ssl);
+      dtlsClient,
+      hostname,
+      address,
+      port,
+      context,
+      ssl,
+      libCrypto,
+      libSsl,
+    );
     final key = getConnectionKey(address, port);
     dtlsClient._connectionCache[key] = connection;
     DtlsClient._connections[ssl.address] = connection;
@@ -251,9 +280,9 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   final Completer<_DtlsClientConnection> _connectCompleter = Completer();
 
-  final Pointer<BIO> _rbio = libCrypto.BIO_new(libCrypto.BIO_s_mem());
+  final Pointer<BIO> _rbio;
 
-  final Pointer<BIO> _wbio = libCrypto.BIO_new(libCrypto.BIO_s_mem());
+  final Pointer<BIO> _wbio;
 
   final _received = StreamController<Datagram>();
 
@@ -265,6 +294,10 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   bool get connected => _connected;
 
   Timer? _timer;
+
+  final NativeLibrary _libSsl;
+
+  final NativeLibrary _libCrypto;
 
   static Uint8List _determineIdentityHint(
     Pointer<Int8> hint,
@@ -353,10 +386,10 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   final DtlsClient _dtlsClient;
 
   void _handleError(int ret, void Function(Exception) errorHandler) {
-    final code = libSsl.SSL_get_error(_ssl, ret);
+    final code = _libSsl.SSL_get_error(_ssl, ret);
     if (code == SSL_ERROR_SSL) {
       errorHandler(TlsException(
-          libCrypto.ERR_error_string(libCrypto.ERR_get_error(), nullptr)
+          _libCrypto.ERR_error_string(_libCrypto.ERR_get_error(), nullptr)
               .cast<Utf8>()
               .toDartString()));
     } else if (code == SSL_ERROR_ZERO_RETURN) {
@@ -365,7 +398,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   void _connectToPeer() {
-    final ret = libSsl.SSL_connect(_ssl);
+    final ret = _libSsl.SSL_connect(_ssl);
     _maintainOutgoing();
     if (ret == 1) {
       _connected = true;
@@ -411,7 +444,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       _dtlsClient._connectionCache.remove(address);
     }
 
-    libSsl.SSL_free(_ssl);
+    _libSsl.SSL_free(_ssl);
 
     _closed = true;
     _connected = false;
@@ -419,19 +452,19 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   void _maintainOutgoing() {
-    final ret = libCrypto.BIO_read(_wbio, _buffer.cast(), _bufferSize);
+    final ret = _libCrypto.BIO_read(_wbio, _buffer.cast(), _bufferSize);
     if (ret > 0) {
       _dtlsClient._socket.send(_buffer.asTypedList(ret), _address, _port);
     }
     _timer?.cancel();
-    if (libSsl.SSL_ctrl(_ssl, DTLS_CTRL_GET_TIMEOUT, 0, _buffer.cast()) > 0) {
+    if (_libSsl.SSL_ctrl(_ssl, DTLS_CTRL_GET_TIMEOUT, 0, _buffer.cast()) > 0) {
       _timer = Timer(_buffer.cast<timeval>().ref.duration, _maintainState);
     }
   }
 
   void _maintainState() {
     if (_connectCompleter.isCompleted) {
-      final ret = libSsl.SSL_read(_ssl, _buffer.cast(), _bufferSize);
+      final ret = _libSsl.SSL_read(_ssl, _buffer.cast(), _bufferSize);
       if (ret > 0) {
         final data = Uint8List.fromList(_buffer.asTypedList(ret));
         final datagram = Datagram(data, _address, _port);
@@ -488,7 +521,11 @@ class DtlsClientContext {
 
   final String? _ciphers;
 
-  void _addRoots(List<Uint8List> certs, Pointer<SSL_CTX> ctx) {
+  void _addRoots(
+    List<Uint8List> certs,
+    Pointer<SSL_CTX> ctx,
+    NativeLibrary libSsl,
+  ) {
     if (certs.isEmpty) return;
     final bufLen = certs.map((c) => c.length).reduce(max);
     final buf = malloc.call<Uint8>(bufLen);
@@ -509,14 +546,14 @@ class DtlsClientContext {
       ..free(buf);
   }
 
-  Pointer<SSL_CTX> _generateSslContext() {
+  Pointer<SSL_CTX> _generateSslContext(NativeLibrary libSsl) {
     final ctx = libSsl.SSL_CTX_new(libSsl.DTLS_client_method());
 
     if (_withTrustedRoots) {
       libSsl.SSL_CTX_set_default_verify_paths(ctx);
     }
 
-    _addRoots(_rootCertificates, ctx);
+    _addRoots(_rootCertificates, ctx, libSsl);
     libSsl.SSL_CTX_set_verify(
         ctx, _verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, nullptr);
 

@@ -8,8 +8,6 @@ import 'dart:io';
 import 'generated/ffi.dart';
 import 'openssl_load_exception.dart';
 
-export 'generated/ffi.dart';
-
 NativeLibrary _loadLibrary(List<String> libNames, String libName) {
   for (final libName in libNames) {
     try {
