@@ -8,10 +8,10 @@ import 'dart:io';
 import 'generated/ffi.dart';
 import 'openssl_load_exception.dart';
 
-NativeLibrary _loadLibrary(List<String> libNames, String libName) {
+OpenSsl _loadLibrary(List<String> libNames, String libName) {
   for (final libName in libNames) {
     try {
-      return NativeLibrary(DynamicLibrary.open(libName));
+      return OpenSsl(DynamicLibrary.open(libName));
       // ignore: avoid_catching_errors
     } on ArgumentError {
       continue;
@@ -21,10 +21,10 @@ NativeLibrary _loadLibrary(List<String> libNames, String libName) {
   throw OpenSslLoadException(libName);
 }
 
-/// Loads libssl as a [NativeLibrary].
-NativeLibrary _loadLibSsl() {
+/// Loads libssl as an [OpenSsl] object.
+OpenSsl _loadLibSsl() {
   if (Platform.isIOS) {
-    return NativeLibrary(DynamicLibrary.process());
+    return OpenSsl(DynamicLibrary.process());
   }
   final List<String> libNames;
 
@@ -44,10 +44,10 @@ NativeLibrary _loadLibSsl() {
   return _loadLibrary(libNames, 'libssl');
 }
 
-/// Loads libcrypto as a [NativeLibrary].
-NativeLibrary _loadLibCrypto() {
+/// Loads libcrypto as an [OpenSsl] object.
+OpenSsl _loadLibCrypto() {
   if (Platform.isIOS) {
-    return NativeLibrary(DynamicLibrary.process());
+    return OpenSsl(DynamicLibrary.process());
   }
 
   final List<String> libNames;

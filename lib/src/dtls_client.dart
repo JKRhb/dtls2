@@ -55,12 +55,12 @@ class DtlsClient {
   /// and a [_context] for establishing [DtlsConnection]s.
   ///
   /// If you want to load [libSsl] or [libCrypto] yourself (e.g., from a custom
-  /// path), you can pass custom [NativeLibrary] objects to this constructor.
+  /// path), you can pass custom [OpenSsl] objects to this constructor.
   DtlsClient(
     this._socket,
     this._context, {
-    NativeLibrary? libSsl,
-    NativeLibrary? libCrypto,
+    OpenSsl? libSsl,
+    OpenSsl? libCrypto,
   })  : _sslContext = _context._generateSslContext(libSsl ?? lib.libSsl),
         _libSsl = libSsl ?? lib.libSsl,
         _libCrypto = libCrypto ?? lib.libCrypto {
@@ -82,8 +82,8 @@ class DtlsClient {
     bool reuseAddress = true,
     bool reusePort = false,
     int ttl = 1,
-    NativeLibrary? libSsl,
-    NativeLibrary? libCrypto,
+    OpenSsl? libSsl,
+    OpenSsl? libCrypto,
   }) async {
     final socket = await RawDatagramSocket.bind(
       host,
@@ -130,9 +130,9 @@ class DtlsClient {
   /// Maps OpenSSL sessions to [_DtlsClientConnection]s.
   static final Map<int, _DtlsClientConnection> _connections = {};
 
-  final NativeLibrary _libSsl;
+  final OpenSsl _libSsl;
 
-  final NativeLibrary _libCrypto;
+  final OpenSsl _libCrypto;
 
   /// Closes this [DtlsClient].
   ///
@@ -253,8 +253,8 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     InternetAddress address,
     int port,
     DtlsClientContext context,
-    NativeLibrary libCrypto,
-    NativeLibrary libSsl,
+    OpenSsl libCrypto,
+    OpenSsl libSsl,
   ) {
     final ssl = libSsl.SSL_new(dtlsClient._sslContext);
     final connection = _DtlsClientConnection(
@@ -298,9 +298,9 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   Timer? _timer;
 
-  final NativeLibrary _libSsl;
+  final OpenSsl _libSsl;
 
-  final NativeLibrary _libCrypto;
+  final OpenSsl _libCrypto;
 
   static Uint8List _determineIdentityHint(
     Pointer<Int8> hint,
@@ -527,7 +527,7 @@ class DtlsClientContext {
   void _addRoots(
     List<Uint8List> certs,
     Pointer<SSL_CTX> ctx,
-    NativeLibrary libSsl,
+    OpenSsl libSsl,
   ) {
     if (certs.isEmpty) return;
     final bufLen = certs.map((c) => c.length).reduce(max);
@@ -549,7 +549,7 @@ class DtlsClientContext {
       ..free(buf);
   }
 
-  Pointer<SSL_CTX> _generateSslContext(NativeLibrary libSsl) {
+  Pointer<SSL_CTX> _generateSslContext(OpenSsl libSsl) {
     final ctx = libSsl.SSL_CTX_new(libSsl.DTLS_client_method());
 
     if (_withTrustedRoots) {

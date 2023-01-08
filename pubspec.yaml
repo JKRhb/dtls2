@@ -21,6 +21,7 @@ dev_dependencies:
   test: ^1.16.0
 
 ffigen:
+  name: OpenSsl
   description: Bindings to OpenSSL for DTLS support in Dart.
   output: 'lib/src/generated/ffi.dart'
   headers:
