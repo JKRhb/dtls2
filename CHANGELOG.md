@@ -1,3 +1,8 @@
+## 0.5.0
+
+- refactor: rename `NativeLibrary` class to `OpenSsl`
+- feat: expose `OpenSsl` class
+
 ## 0.4.0
 
 - feat: look for multiple default OpenSSL file names
