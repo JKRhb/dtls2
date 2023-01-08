@@ -1,3 +1,14 @@
+## 0.4.0
+
+- feat: look for multiple default OpenSSL file names
+- feat: allow passing custom libSsl and libCrypto objects
+- feat: add additional default macOS lib paths
+- chore: also run CI on Windows and macOS
+- fix: fix macOS homebrew paths
+- chore: adjust example
+- docs: update README
+- fix: don't iterate over connection cache for incoming data
+
 ## 0.3.0
 
 - feat!: improve memory safety of DtlsClientContext
