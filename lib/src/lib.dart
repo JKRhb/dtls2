@@ -6,43 +6,64 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'generated/ffi.dart';
+import 'openssl_load_exception.dart';
 
 export 'generated/ffi.dart';
 
+NativeLibrary _loadLibrary(List<String> libNames, String libName) {
+  for (final libName in libNames) {
+    try {
+      return NativeLibrary(DynamicLibrary.open(libName));
+      // ignore: avoid_catching_errors
+    } on ArgumentError {
+      continue;
+    }
+  }
+
+  throw OpenSslLoadException(libName);
+}
+
 /// Loads libssl as a [NativeLibrary].
-NativeLibrary loadLibSsl() {
+NativeLibrary _loadLibSsl() {
   if (Platform.isIOS) {
     return NativeLibrary(DynamicLibrary.process());
   }
-  String? libName;
+  final List<String> libNames;
 
   if (Platform.isWindows) {
-    libName = 'libssl-1_1-x64.dll';
+    libNames = const ['libssl-3-x64.dll', 'libssl-1_1-x64.dll'];
+  } else if (Platform.isMacOS) {
+    // TODO(JKRhb): Check if these are working
+    libNames = const ['libssl.3.dylib', 'libssl.1.1.dylib'];
+  } else {
+    libNames = const ['libssl.so'];
   }
 
-  libName ??= 'libssl.so';
-
-  return NativeLibrary(DynamicLibrary.open(libName));
+  return _loadLibrary(libNames, 'libssl');
 }
 
 /// Loads libcrypto as a [NativeLibrary].
-NativeLibrary loadLibCrypto() {
+NativeLibrary _loadLibCrypto() {
   if (Platform.isIOS) {
     return NativeLibrary(DynamicLibrary.process());
   }
-  String? libName;
+
+  final List<String> libNames;
 
   if (Platform.isWindows) {
-    libName = 'libcrypto-1_1-x64.dll';
+    libNames = const ['libcrypto-3-x64.dll', 'libcrypto-1_1-x64.dll'];
+  } else if (Platform.isMacOS) {
+    // TODO(JKRhb): Check if these are working
+    libNames = const ['libcrypto.3.dylib', 'libcrypto.1.1.dylib'];
+  } else {
+    libNames = const ['libcrypto.so'];
   }
 
-  libName ??= 'libcrypto.so';
-
-  return NativeLibrary(DynamicLibrary.open(libName));
+  return _loadLibrary(libNames, 'libssl');
 }
 
 /// The global libssl object.
-final libSsl = loadLibSsl();
+final libSsl = _loadLibSsl();
 
 /// The global libcrypto object.
-final libCrypto = loadLibCrypto();
+final libCrypto = _loadLibCrypto();
