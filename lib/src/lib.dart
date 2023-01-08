@@ -32,7 +32,12 @@ NativeLibrary _loadLibSsl() {
     libNames = const ['libssl-3-x64.dll', 'libssl-1_1-x64.dll'];
   } else if (Platform.isMacOS) {
     // TODO(JKRhb): Check if these are working
-    libNames = const ['libssl.3.dylib', 'libssl.1.1.dylib'];
+    libNames = const [
+      '/usr/local/lib/libssl.3.dylib',
+      '/usr/local/lib/libssl.1.1.dylib',
+      'libssl.3.dylib',
+      'libssl.1.1.dylib',
+    ];
   } else {
     libNames = const ['libssl.so'];
   }
@@ -52,7 +57,12 @@ NativeLibrary _loadLibCrypto() {
     libNames = const ['libcrypto-3-x64.dll', 'libcrypto-1_1-x64.dll'];
   } else if (Platform.isMacOS) {
     // TODO(JKRhb): Check if these are working
-    libNames = const ['libcrypto.3.dylib', 'libcrypto.1.1.dylib'];
+    libNames = const [
+      '/usr/local/lib/libcrypto.3.dylib',
+      '/usr/local/lib/libcrypto.1.1.dylib',
+      'libcrypto.3.dylib',
+      'libcrypto.1.1.dylib',
+    ];
   } else {
     libNames = const ['libcrypto.so'];
   }
