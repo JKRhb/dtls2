@@ -32,11 +32,11 @@ void main() async {
 
   connection
     ..listen((datagram) async {
-      print('> ${utf8.decode(datagram.data)}');
-      print('Connection closed');
+      print(datagram.data.toString());
       await connection.close();
-    }, onDone: () {
-      dtlsClient.close();
+      print('Connection closed');
+    }, onDone: () async {
+      await dtlsClient.close();
       print('Client closed');
     })
     ..send(Uint8List.fromList(utf8.encode('Hello World')));
