@@ -102,7 +102,10 @@ class DtlsClient {
       if (event == RawSocketEvent.read) {
         final data = _socket.receive();
         if (data != null) {
-          for (final connection in _connectionCache.values) {
+          final key = getConnectionKey(data.address, data.port);
+          final connection = _connectionCache[key];
+
+          if (connection != null) {
             _incoming(data.data, connection);
           }
         }
