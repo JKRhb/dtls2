@@ -8,17 +8,16 @@
 import 'dart:ffi' as ffi;
 
 /// Bindings to OpenSSL for DTLS support in Dart.
-class NativeLibrary {
+class OpenSsl {
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
       _lookup;
 
   /// The symbols are looked up in [dynamicLibrary].
-  NativeLibrary(ffi.DynamicLibrary dynamicLibrary)
-      : _lookup = dynamicLibrary.lookup;
+  OpenSsl(ffi.DynamicLibrary dynamicLibrary) : _lookup = dynamicLibrary.lookup;
 
   /// The symbols are looked up with [lookup].
-  NativeLibrary.fromLookup(
+  OpenSsl.fromLookup(
       ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
           lookup)
       : _lookup = lookup;
