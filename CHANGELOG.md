@@ -1,3 +1,7 @@
+## 0.6.0
+
+- chore: update dependencies, upgrade to ffi 2.x.x
+
 ## 0.5.2
 
 - fix: fix hostname verification of X.509 certificates
