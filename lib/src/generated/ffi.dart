@@ -45,7 +45,7 @@ class OpenSsl {
   }
 
   late final _BIO_freePtr =
-      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<BIO>)>>(
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<BIO>)>>(
           'BIO_free');
   late final _BIO_free =
       _BIO_freePtr.asFunction<int Function(ffi.Pointer<BIO>)>();
@@ -64,8 +64,8 @@ class OpenSsl {
 
   late final _BIO_readPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(
-              ffi.Pointer<BIO>, ffi.Pointer<ffi.Void>, ffi.Int32)>>('BIO_read');
+          ffi.Int Function(
+              ffi.Pointer<BIO>, ffi.Pointer<ffi.Void>, ffi.Int)>>('BIO_read');
   late final _BIO_read = _BIO_readPtr.asFunction<
       int Function(ffi.Pointer<BIO>, ffi.Pointer<ffi.Void>, int)>();
 
@@ -83,8 +83,8 @@ class OpenSsl {
 
   late final _BIO_writePtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(ffi.Pointer<BIO>, ffi.Pointer<ffi.Void>,
-              ffi.Int32)>>('BIO_write');
+          ffi.Int Function(
+              ffi.Pointer<BIO>, ffi.Pointer<ffi.Void>, ffi.Int)>>('BIO_write');
   late final _BIO_write = _BIO_writePtr.asFunction<
       int Function(ffi.Pointer<BIO>, ffi.Pointer<ffi.Void>, int)>();
 
@@ -104,7 +104,7 @@ class OpenSsl {
 
   late final _BIO_ctrlPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int64 Function(ffi.Pointer<BIO>, ffi.Int32, ffi.Int64,
+          ffi.Long Function(ffi.Pointer<BIO>, ffi.Int, ffi.Long,
               ffi.Pointer<ffi.Void>)>>('BIO_ctrl');
   late final _BIO_ctrl = _BIO_ctrlPtr.asFunction<
       int Function(ffi.Pointer<BIO>, int, int, ffi.Pointer<ffi.Void>)>();
@@ -131,14 +131,14 @@ class OpenSsl {
 
   late final _X509_STORE_add_certPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(ffi.Pointer<X509_STORE>,
+          ffi.Int Function(ffi.Pointer<X509_STORE>,
               ffi.Pointer<X509>)>>('X509_STORE_add_cert');
   late final _X509_STORE_add_cert = _X509_STORE_add_certPtr.asFunction<
       int Function(ffi.Pointer<X509_STORE>, ffi.Pointer<X509>)>();
 
   int X509_VERIFY_PARAM_set1_host(
     ffi.Pointer<X509_VERIFY_PARAM> param,
-    ffi.Pointer<ffi.Int8> name,
+    ffi.Pointer<ffi.Char> name,
     int namelen,
   ) {
     return _X509_VERIFY_PARAM_set1_host(
@@ -150,12 +150,12 @@ class OpenSsl {
 
   late final _X509_VERIFY_PARAM_set1_hostPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(ffi.Pointer<X509_VERIFY_PARAM>,
-              ffi.Pointer<ffi.Int8>, size_t)>>('X509_VERIFY_PARAM_set1_host');
+          ffi.Int Function(ffi.Pointer<X509_VERIFY_PARAM>,
+              ffi.Pointer<ffi.Char>, ffi.Size)>>('X509_VERIFY_PARAM_set1_host');
   late final _X509_VERIFY_PARAM_set1_host =
       _X509_VERIFY_PARAM_set1_hostPtr.asFunction<
           int Function(
-              ffi.Pointer<X509_VERIFY_PARAM>, ffi.Pointer<ffi.Int8>, int)>();
+              ffi.Pointer<X509_VERIFY_PARAM>, ffi.Pointer<ffi.Char>, int)>();
 
   void X509_free(
     ffi.Pointer<X509> a,
@@ -173,7 +173,7 @@ class OpenSsl {
 
   ffi.Pointer<X509> d2i_X509(
     ffi.Pointer<ffi.Pointer<X509>> a,
-    ffi.Pointer<ffi.Pointer<ffi.Uint8>> in1,
+    ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>> in1,
     int len,
   ) {
     return _d2i_X509(
@@ -185,17 +185,19 @@ class OpenSsl {
 
   late final _d2i_X509Ptr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<X509> Function(ffi.Pointer<ffi.Pointer<X509>>,
-              ffi.Pointer<ffi.Pointer<ffi.Uint8>>, ffi.Int64)>>('d2i_X509');
+          ffi.Pointer<X509> Function(
+              ffi.Pointer<ffi.Pointer<X509>>,
+              ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>,
+              ffi.Long)>>('d2i_X509');
   late final _d2i_X509 = _d2i_X509Ptr.asFunction<
       ffi.Pointer<X509> Function(ffi.Pointer<ffi.Pointer<X509>>,
-          ffi.Pointer<ffi.Pointer<ffi.Uint8>>, int)>();
+          ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>, int)>();
 
   void SSL_CTX_set_info_callback(
     ffi.Pointer<SSL_CTX> ctx,
     ffi.Pointer<
             ffi.NativeFunction<
-                ffi.Void Function(ffi.Pointer<SSL>, ffi.Int32, ffi.Int32)>>
+                ffi.Void Function(ffi.Pointer<SSL>, ffi.Int, ffi.Int)>>
         cb,
   ) {
     return _SSL_CTX_set_info_callback(
@@ -210,8 +212,8 @@ class OpenSsl {
               ffi.Pointer<SSL_CTX>,
               ffi.Pointer<
                   ffi.NativeFunction<
-                      ffi.Void Function(ffi.Pointer<SSL>, ffi.Int32,
-                          ffi.Int32)>>)>>('SSL_CTX_set_info_callback');
+                      ffi.Void Function(ffi.Pointer<SSL>, ffi.Int,
+                          ffi.Int)>>)>>('SSL_CTX_set_info_callback');
   late final _SSL_CTX_set_info_callback =
       _SSL_CTX_set_info_callbackPtr.asFunction<
           void Function(
@@ -219,7 +221,7 @@ class OpenSsl {
               ffi.Pointer<
                   ffi.NativeFunction<
                       ffi.Void Function(
-                          ffi.Pointer<SSL>, ffi.Int32, ffi.Int32)>>)>();
+                          ffi.Pointer<SSL>, ffi.Int, ffi.Int)>>)>();
 
   void SSL_set_psk_client_callback(
     ffi.Pointer<SSL> ssl,
@@ -240,7 +242,7 @@ class OpenSsl {
 
   int SSL_CTX_set_cipher_list(
     ffi.Pointer<SSL_CTX> arg0,
-    ffi.Pointer<ffi.Int8> str,
+    ffi.Pointer<ffi.Char> str,
   ) {
     return _SSL_CTX_set_cipher_list(
       arg0,
@@ -250,10 +252,10 @@ class OpenSsl {
 
   late final _SSL_CTX_set_cipher_listPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(ffi.Pointer<SSL_CTX>,
-              ffi.Pointer<ffi.Int8>)>>('SSL_CTX_set_cipher_list');
+          ffi.Int Function(ffi.Pointer<SSL_CTX>,
+              ffi.Pointer<ffi.Char>)>>('SSL_CTX_set_cipher_list');
   late final _SSL_CTX_set_cipher_list = _SSL_CTX_set_cipher_listPtr.asFunction<
-      int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Int8>)>();
+      int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>)>();
 
   ffi.Pointer<SSL_CTX> SSL_CTX_new(
     ffi.Pointer<SSL_METHOD> meth,
@@ -332,7 +334,7 @@ class OpenSsl {
 
   late final _SSL_CTX_set_verifyPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<SSL_CTX>, ffi.Int32,
+          ffi.Void Function(ffi.Pointer<SSL_CTX>, ffi.Int,
               SSL_verify_cb)>>('SSL_CTX_set_verify');
   late final _SSL_CTX_set_verify = _SSL_CTX_set_verifyPtr.asFunction<
       void Function(ffi.Pointer<SSL_CTX>, int, SSL_verify_cb)>();
@@ -389,7 +391,7 @@ class OpenSsl {
   }
 
   late final _SSL_connectPtr =
-      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<SSL>)>>(
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<SSL>)>>(
           'SSL_connect');
   late final _SSL_connect =
       _SSL_connectPtr.asFunction<int Function(ffi.Pointer<SSL>)>();
@@ -408,8 +410,8 @@ class OpenSsl {
 
   late final _SSL_readPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(
-              ffi.Pointer<SSL>, ffi.Pointer<ffi.Void>, ffi.Int32)>>('SSL_read');
+          ffi.Int Function(
+              ffi.Pointer<SSL>, ffi.Pointer<ffi.Void>, ffi.Int)>>('SSL_read');
   late final _SSL_read = _SSL_readPtr.asFunction<
       int Function(ffi.Pointer<SSL>, ffi.Pointer<ffi.Void>, int)>();
 
@@ -427,8 +429,8 @@ class OpenSsl {
 
   late final _SSL_writePtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(ffi.Pointer<SSL>, ffi.Pointer<ffi.Void>,
-              ffi.Int32)>>('SSL_write');
+          ffi.Int Function(
+              ffi.Pointer<SSL>, ffi.Pointer<ffi.Void>, ffi.Int)>>('SSL_write');
   late final _SSL_write = _SSL_writePtr.asFunction<
       int Function(ffi.Pointer<SSL>, ffi.Pointer<ffi.Void>, int)>();
 
@@ -448,7 +450,7 @@ class OpenSsl {
 
   late final _SSL_ctrlPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int64 Function(ffi.Pointer<SSL>, ffi.Int32, ffi.Int64,
+          ffi.Long Function(ffi.Pointer<SSL>, ffi.Int, ffi.Long,
               ffi.Pointer<ffi.Void>)>>('SSL_ctrl');
   late final _SSL_ctrl = _SSL_ctrlPtr.asFunction<
       int Function(ffi.Pointer<SSL>, int, int, ffi.Pointer<ffi.Void>)>();
@@ -463,9 +465,9 @@ class OpenSsl {
     );
   }
 
-  late final _SSL_get_errorPtr = _lookup<
-          ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<SSL>, ffi.Int32)>>(
-      'SSL_get_error');
+  late final _SSL_get_errorPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<SSL>, ffi.Int)>>(
+          'SSL_get_error');
   late final _SSL_get_error =
       _SSL_get_errorPtr.asFunction<int Function(ffi.Pointer<SSL>, int)>();
 
@@ -488,7 +490,7 @@ class OpenSsl {
   }
 
   late final _SSL_shutdownPtr =
-      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<SSL>)>>(
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<SSL>)>>(
           'SSL_shutdown');
   late final _SSL_shutdown =
       _SSL_shutdownPtr.asFunction<int Function(ffi.Pointer<SSL>)>();
@@ -502,7 +504,7 @@ class OpenSsl {
   }
 
   late final _SSL_CTX_set_default_verify_pathsPtr =
-      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<SSL_CTX>)>>(
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<SSL_CTX>)>>(
           'SSL_CTX_set_default_verify_paths');
   late final _SSL_CTX_set_default_verify_paths =
       _SSL_CTX_set_default_verify_pathsPtr.asFunction<
@@ -513,12 +515,12 @@ class OpenSsl {
   }
 
   late final _ERR_get_errorPtr =
-      _lookup<ffi.NativeFunction<ffi.Uint64 Function()>>('ERR_get_error');
+      _lookup<ffi.NativeFunction<ffi.UnsignedLong Function()>>('ERR_get_error');
   late final _ERR_get_error = _ERR_get_errorPtr.asFunction<int Function()>();
 
-  ffi.Pointer<ffi.Int8> ERR_error_string(
+  ffi.Pointer<ffi.Char> ERR_error_string(
     int e,
-    ffi.Pointer<ffi.Int8> buf,
+    ffi.Pointer<ffi.Char> buf,
   ) {
     return _ERR_error_string(
       e,
@@ -528,10 +530,10 @@ class OpenSsl {
 
   late final _ERR_error_stringPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<ffi.Int8> Function(
-              ffi.Uint64, ffi.Pointer<ffi.Int8>)>>('ERR_error_string');
+          ffi.Pointer<ffi.Char> Function(
+              ffi.UnsignedLong, ffi.Pointer<ffi.Char>)>>('ERR_error_string');
   late final _ERR_error_string = _ERR_error_stringPtr.asFunction<
-      ffi.Pointer<ffi.Int8> Function(int, ffi.Pointer<ffi.Int8>)>();
+      ffi.Pointer<ffi.Char> Function(int, ffi.Pointer<ffi.Char>)>();
 }
 
 class timeval extends ffi.Struct {
@@ -542,8 +544,8 @@ class timeval extends ffi.Struct {
   external int tv_usec;
 }
 
-typedef __time_t = ffi.Int64;
-typedef __suseconds_t = ffi.Int64;
+typedef __time_t = ffi.Long;
+typedef __suseconds_t = ffi.Long;
 typedef BIO = bio_st;
 
 class bio_st extends ffi.Opaque {}
@@ -564,7 +566,6 @@ typedef X509_VERIFY_PARAM = X509_VERIFY_PARAM_st;
 
 class X509_VERIFY_PARAM_st extends ffi.Opaque {}
 
-typedef size_t = ffi.Uint64;
 typedef SSL_CTX = ssl_ctx_st;
 
 class ssl_ctx_st extends ffi.Opaque {}
@@ -575,20 +576,19 @@ class ssl_st extends ffi.Opaque {}
 
 typedef SSL_psk_client_cb_func = ffi.Pointer<
     ffi.NativeFunction<
-        ffi.Uint32 Function(
+        ffi.UnsignedInt Function(
             ffi.Pointer<SSL>,
-            ffi.Pointer<ffi.Int8>,
-            ffi.Pointer<ffi.Int8>,
-            ffi.Uint32,
-            ffi.Pointer<ffi.Uint8>,
-            ffi.Uint32)>>;
+            ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Char>,
+            ffi.UnsignedInt,
+            ffi.Pointer<ffi.UnsignedChar>,
+            ffi.UnsignedInt)>>;
 typedef SSL_METHOD = ssl_method_st;
 
 class ssl_method_st extends ffi.Opaque {}
 
 typedef SSL_verify_cb = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Int32 Function(ffi.Int32, ffi.Pointer<X509_STORE_CTX>)>>;
+    ffi.NativeFunction<ffi.Int Function(ffi.Int, ffi.Pointer<X509_STORE_CTX>)>>;
 typedef X509_STORE_CTX = x509_store_ctx_st;
 
 class x509_store_ctx_st extends ffi.Opaque {}
