@@ -1,3 +1,7 @@
+## 0.5.2
+
+- fix: fix hostname verification of X.509 certificates
+
 ## 0.5.1
 
 - feat: shutdown DTLS connection upon closing
