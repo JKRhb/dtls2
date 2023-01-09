@@ -481,6 +481,20 @@ class OpenSsl {
   late final _DTLS_client_method =
       _DTLS_client_methodPtr.asFunction<ffi.Pointer<SSL_METHOD> Function()>();
 
+  int SSL_shutdown(
+    ffi.Pointer<SSL> s,
+  ) {
+    return _SSL_shutdown(
+      s,
+    );
+  }
+
+  late final _SSL_shutdownPtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<SSL>)>>(
+          'SSL_shutdown');
+  late final _SSL_shutdown =
+      _SSL_shutdownPtr.asFunction<int Function(ffi.Pointer<SSL>)>();
+
   int SSL_CTX_set_default_verify_paths(
     ffi.Pointer<SSL_CTX> ctx,
   ) {

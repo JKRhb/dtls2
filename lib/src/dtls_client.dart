@@ -447,6 +447,10 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       _dtlsClient._connectionCache.remove(address);
     }
 
+    _libSsl.SSL_shutdown(_ssl);
+
+    _maintainState();
+
     _libSsl.SSL_free(_ssl);
 
     _closed = true;

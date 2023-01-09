@@ -52,6 +52,7 @@ ffigen:
       - SSL_connect
       - SSL_ctrl
       - SSL_free
+      - SSL_shutdown
       - SSL_get0_param
       - SSL_get_error
       - SSL_new
