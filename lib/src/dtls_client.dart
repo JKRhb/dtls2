@@ -74,7 +74,7 @@ class DtlsClient {
   /// [reusePort], [reuseAddress], and [ttl] arguments to it.
   ///
   /// If you want to load [libSsl] or [libCrypto] yourself (e.g., from a custom
-  /// path), you can pass custom [NativeLibrary] objects to this constructor.
+  /// path), you can pass custom [OpenSsl] objects to this constructor.
   static Future<DtlsClient> bind(
     dynamic host,
     int port,
