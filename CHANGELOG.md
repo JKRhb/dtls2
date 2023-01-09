@@ -1,3 +1,7 @@
+## 0.5.1
+
+- feat: shutdown DTLS connection upon closing
+
 ## 0.5.0
 
 - refactor: rename `NativeLibrary` class to `OpenSsl`
