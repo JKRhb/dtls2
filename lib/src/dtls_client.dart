@@ -23,13 +23,13 @@ const _bufferSize = (1 << 16);
 
 final Pointer<Uint8> _buffer = malloc.call<Uint8>(_bufferSize);
 
-typedef _PskCallbackFunction = Uint32 Function(
+typedef _PskCallbackFunction = UnsignedInt Function(
   Pointer<SSL>,
-  Pointer<Int8>,
-  Pointer<Int8>,
-  Uint32,
-  Pointer<Uint8>,
-  Uint32,
+  Pointer<Char>,
+  Pointer<Char>,
+  UnsignedInt,
+  Pointer<UnsignedChar>,
+  UnsignedInt,
 );
 
 extension _DurationTimeval on timeval {
@@ -303,7 +303,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   final OpenSsl _libCrypto;
 
   static Uint8List _determineIdentityHint(
-    Pointer<Int8> hint,
+    Pointer<Char> hint,
     int maxIdentityLength,
   ) {
     if (hint == nullptr) {
@@ -330,10 +330,10 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   static int _pskCallback(
       Pointer<SSL> ssl,
-      Pointer<Int8> hint,
-      Pointer<Int8> identity,
+      Pointer<Char> hint,
+      Pointer<Char> identity,
       int maxIdentityLength,
-      Pointer<Uint8> psk,
+      Pointer<UnsignedChar> psk,
       int maxPskLength) {
     final connection = DtlsClient._connections[ssl.address];
 
@@ -359,9 +359,13 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
 
     identity
+        .cast<Uint8>()
         .asTypedList(connectionIdentity.lengthInBytes)
         .setAll(0, connectionIdentity);
-    psk.asTypedList(connectionPsk.lengthInBytes).setAll(0, connectionPsk);
+    psk
+        .cast<Uint8>()
+        .asTypedList(connectionPsk.lengthInBytes)
+        .setAll(0, connectionPsk);
     return connectionPsk.lengthInBytes;
   }
 
@@ -535,12 +539,12 @@ class DtlsClientContext {
   ) {
     if (certs.isEmpty) return;
     final bufLen = certs.map((c) => c.length).reduce(max);
-    final buf = malloc.call<Uint8>(bufLen);
-    final data = malloc.call<Pointer<Uint8>>(1);
+    final buf = malloc.call<UnsignedChar>(bufLen);
+    final data = malloc.call<Pointer<UnsignedChar>>(1);
     final store = libSsl.SSL_CTX_get_cert_store(ctx);
 
     for (final cert in certs) {
-      buf.asTypedList(bufLen).setAll(0, cert);
+      buf.cast<Uint8>().asTypedList(bufLen).setAll(0, cert);
       data.value = buf;
       final opensslCert = libSsl.d2i_X509(nullptr, data, cert.length);
       libSsl
