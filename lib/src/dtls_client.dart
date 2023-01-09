@@ -226,7 +226,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     if (hostname != null) {
       final hostnameStr = hostname.toNativeUtf8();
       _libCrypto.X509_VERIFY_PARAM_set1_host(
-          _libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), nullptr);
+          _libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), hostnameStr.length);
       _libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
           TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
       malloc.free(hostnameStr);
