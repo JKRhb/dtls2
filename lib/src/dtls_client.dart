@@ -190,13 +190,13 @@ class DtlsClient {
     connection._maintainState();
   }
 
-  int _send(_DtlsClientConnection _dtlsClientConnection, List<int> data) {
+  int _send(_DtlsClientConnection dtlsClientConnection, List<int> data) {
     _buffer.asTypedList(_bufferSize).setAll(0, data);
     final ret = _libSsl.SSL_write(
-        _dtlsClientConnection._ssl, _buffer.cast(), data.length);
-    _dtlsClientConnection._maintainOutgoing();
+        dtlsClientConnection._ssl, _buffer.cast(), data.length);
+    dtlsClientConnection._maintainOutgoing();
     if (ret < 0) {
-      _dtlsClientConnection._handleError(ret, (e) => throw e);
+      dtlsClientConnection._handleError(ret, (e) => throw e);
     }
     return ret;
   }
@@ -241,10 +241,10 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       return;
     }
 
-    final Pointer<NativeFunction<_PskCallbackFunction>> _callback =
+    final Pointer<NativeFunction<_PskCallbackFunction>> callback =
         Pointer.fromFunction(_pskCallback, _pskErrorCode);
 
-    _libSsl.SSL_set_psk_client_callback(_ssl, _callback);
+    _libSsl.SSL_set_psk_client_callback(_ssl, callback);
   }
 
   static Future<_DtlsClientConnection> connect(
