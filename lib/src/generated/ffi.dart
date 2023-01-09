@@ -139,7 +139,7 @@ class OpenSsl {
   int X509_VERIFY_PARAM_set1_host(
     ffi.Pointer<X509_VERIFY_PARAM> param,
     ffi.Pointer<ffi.Int8> name,
-    ffi.Pointer<size_t> namelen,
+    int namelen,
   ) {
     return _X509_VERIFY_PARAM_set1_host(
       param,
@@ -150,14 +150,12 @@ class OpenSsl {
 
   late final _X509_VERIFY_PARAM_set1_hostPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int32 Function(
-              ffi.Pointer<X509_VERIFY_PARAM>,
-              ffi.Pointer<ffi.Int8>,
-              ffi.Pointer<size_t>)>>('X509_VERIFY_PARAM_set1_host');
+          ffi.Int32 Function(ffi.Pointer<X509_VERIFY_PARAM>,
+              ffi.Pointer<ffi.Int8>, size_t)>>('X509_VERIFY_PARAM_set1_host');
   late final _X509_VERIFY_PARAM_set1_host =
       _X509_VERIFY_PARAM_set1_hostPtr.asFunction<
-          int Function(ffi.Pointer<X509_VERIFY_PARAM>, ffi.Pointer<ffi.Int8>,
-              ffi.Pointer<size_t>)>();
+          int Function(
+              ffi.Pointer<X509_VERIFY_PARAM>, ffi.Pointer<ffi.Int8>, int)>();
 
   void X509_free(
     ffi.Pointer<X509> a,
@@ -566,7 +564,7 @@ typedef X509_VERIFY_PARAM = X509_VERIFY_PARAM_st;
 
 class X509_VERIFY_PARAM_st extends ffi.Opaque {}
 
-typedef size_t = ffi.NativeFunction<ffi.Int32 Function()>;
+typedef size_t = ffi.Uint64;
 typedef SSL_CTX = ssl_ctx_st;
 
 class ssl_ctx_st extends ffi.Opaque {}
