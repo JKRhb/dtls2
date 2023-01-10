@@ -176,17 +176,21 @@ class DtlsClient {
       return existingConnection;
     }
 
-    final sslContext = context._generateSslContext(_libSsl);
+    final connection = _DtlsClientConnection(
+      this,
+      hostname,
+      address,
+      port,
+      context._generateSslContext(_libSsl),
+      context._pskCredentialsCallback,
+      _libCrypto,
+      _libSsl,
+    );
 
-    final connection = await _DtlsClientConnection.connect(
-        this,
-        hostname,
-        address,
-        port,
-        sslContext,
-        context._pskCredentialsCallback,
-        _libCrypto,
-        _libSsl);
+    _connectionCache[key] = connection;
+    DtlsClient._connections[connection._ssl.address] = connection;
+
+    return connection._connect();
 
     return connection;
   }
@@ -219,11 +223,11 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     this._address,
     this._port,
     Pointer<SSL_CTX> sslContext,
-    this._ssl,
     this._pskCredentialsCallback,
     this._libCrypto,
     this._libSsl,
-  )   : _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
+  )   : _ssl = _libSsl.SSL_new(sslContext),
+        _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
         _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()) {
     _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
     _libCrypto
@@ -254,34 +258,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
         Pointer.fromFunction(_pskCallback, _pskErrorCode);
 
     _libSsl.SSL_set_psk_client_callback(_ssl, callback);
-  }
-
-  static Future<_DtlsClientConnection> connect(
-    DtlsClient dtlsClient,
-    String? hostname,
-    InternetAddress address,
-    int port,
-    Pointer<SSL_CTX> context,
-    PskCredentialsCallback? pskCredentialsCallback,
-    OpenSsl libCrypto,
-    OpenSsl libSsl,
-  ) {
-    final ssl = libSsl.SSL_new(context);
-    final connection = _DtlsClientConnection(
-      dtlsClient,
-      hostname,
-      address,
-      port,
-      context,
-      ssl,
-      pskCredentialsCallback,
-      libCrypto,
-      libSsl,
-    );
-    final key = getConnectionKey(address, port);
-    dtlsClient._connectionCache[key] = connection;
-    DtlsClient._connections[ssl.address] = connection;
-    return connection._connect();
   }
 
   bool _closed = false;
