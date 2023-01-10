@@ -59,11 +59,12 @@ class DtlsClient {
   DtlsClient(
     this._socket,
     this._context, {
-    OpenSsl? libSsl,
-    OpenSsl? libCrypto,
-  })  : _sslContext = _context._generateSslContext(libSsl ?? lib.libSsl),
-        _libSsl = libSsl ?? lib.libSsl,
-        _libCrypto = libCrypto ?? lib.libCrypto {
+    DynamicLibrary? libSsl,
+    DynamicLibrary? libCrypto,
+  })  : _sslContext =
+            _context._generateSslContext(_loadOpenSsl(libSsl) ?? lib.libSsl),
+        _libSsl = _loadOpenSsl(libSsl) ?? lib.libSsl,
+        _libCrypto = _loadOpenSsl(libCrypto) ?? lib.libCrypto {
     _startListening();
   }
 
@@ -82,8 +83,8 @@ class DtlsClient {
     bool reuseAddress = true,
     bool reusePort = false,
     int ttl = 1,
-    OpenSsl? libSsl,
-    OpenSsl? libCrypto,
+    DynamicLibrary? libSsl,
+    DynamicLibrary? libCrypto,
   }) async {
     final socket = await RawDatagramSocket.bind(
       host,
@@ -133,6 +134,14 @@ class DtlsClient {
   final OpenSsl _libSsl;
 
   final OpenSsl _libCrypto;
+
+  static OpenSsl? _loadOpenSsl(DynamicLibrary? dynamicLibrary) {
+    if (dynamicLibrary == null) {
+      return null;
+    }
+
+    return OpenSsl(dynamicLibrary);
+  }
 
   /// Closes this [DtlsClient].
   ///
