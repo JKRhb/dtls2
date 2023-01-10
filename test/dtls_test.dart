@@ -7,8 +7,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('create and free context and connection', () async {
-    final context = DtlsClientContext();
-    final dtlsClient = await DtlsClient.bind("::", 0, context);
+    final dtlsClient = await DtlsClient.bind("::", 0);
     await dtlsClient.close();
   });
 }
