@@ -51,25 +51,20 @@ extension _DurationTimeval on timeval {
 /// Closing the [DtlsClient] with the [close] method also closes all existing
 /// [DtlsConnection]s.
 class DtlsClient {
-  /// Creates a new [DtlsClient] that uses a pre-existing [RawDatagramSocket]
-  /// and a [_context] for establishing [DtlsConnection]s.
+  /// Creates a new [DtlsClient] that uses a pre-existing [RawDatagramSocket].
   ///
   /// If you want to load [libSsl] or [libCrypto] yourself (e.g., from a custom
   /// path), you can pass custom [OpenSsl] objects to this constructor.
   DtlsClient(
-    this._socket,
-    this._context, {
+    this._socket, {
     DynamicLibrary? libSsl,
     DynamicLibrary? libCrypto,
-  })  : _sslContext =
-            _context._generateSslContext(_loadOpenSsl(libSsl) ?? lib.libSsl),
-        _libSsl = _loadOpenSsl(libSsl) ?? lib.libSsl,
+  })  : _libSsl = _loadOpenSsl(libSsl) ?? lib.libSsl,
         _libCrypto = _loadOpenSsl(libCrypto) ?? lib.libCrypto {
     _startListening();
   }
 
-  /// Binds a [DtlsClient] to the given [host] and [port], using the passed in
-  /// [_context] for establishing [DtlsConnection]s.
+  /// Binds a [DtlsClient] to the given [host] and [port].
   ///
   /// Uses a [RawDatagramSocket] internally and passes the [host], [port],
   /// [reusePort], [reuseAddress], and [ttl] arguments to it.
@@ -78,8 +73,7 @@ class DtlsClient {
   /// path), you can pass custom [OpenSsl] objects to this constructor.
   static Future<DtlsClient> bind(
     dynamic host,
-    int port,
-    DtlsClientContext context, {
+    int port, {
     bool reuseAddress = true,
     bool reusePort = false,
     int ttl = 1,
@@ -94,7 +88,7 @@ class DtlsClient {
       ttl: ttl,
     );
 
-    return DtlsClient(socket, context, libSsl: libSsl, libCrypto: libCrypto)
+    return DtlsClient(socket, libSsl: libSsl, libCrypto: libCrypto)
       .._externalSocket = false;
   }
 
@@ -119,10 +113,6 @@ class DtlsClient {
   bool _externalSocket = true;
 
   final RawDatagramSocket _socket;
-
-  final DtlsClientContext _context;
-
-  final Pointer<SSL_CTX> _sslContext;
 
   /// Maps combinations of [InternetAddress]es and ports to
   /// [_DtlsClientConnection]s to enable caching for this client.
@@ -162,8 +152,6 @@ class DtlsClient {
       _socket.close();
     }
 
-    _libSsl.SSL_CTX_free(_sslContext);
-
     _closed = true;
   }
 
@@ -176,7 +164,8 @@ class DtlsClient {
   /// then you need to close the old connection first.
   Future<DtlsConnection> connect(
     InternetAddress address,
-    int port, {
+    int port,
+    DtlsClientContext context, {
     String? hostname,
   }) async {
     final key = getConnectionKey(address, port);
@@ -187,8 +176,21 @@ class DtlsClient {
       return existingConnection;
     }
 
-    final connection = await _DtlsClientConnection.connect(
-        this, hostname, address, port, _context, _libCrypto, _libSsl);
+    final connection = _DtlsClientConnection(
+      this,
+      hostname,
+      address,
+      port,
+      context._generateSslContext(_libSsl),
+      context._pskCredentialsCallback,
+      _libCrypto,
+      _libSsl,
+    );
+
+    _connectionCache[key] = connection;
+    DtlsClient._connections[connection._ssl.address] = connection;
+
+    return connection._connect();
 
     return connection;
   }
@@ -220,11 +222,11 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     String? hostname,
     this._address,
     this._port,
-    DtlsClientContext context,
-    this._ssl,
+    Pointer<SSL_CTX> sslContext,
+    this._pskCredentialsCallback,
     this._libCrypto,
     this._libSsl,
-  )   : _pskCredentialsCallback = context._pskCredentialsCallback,
+  )   : _ssl = _libSsl.SSL_new(sslContext),
         _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
         _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()) {
     _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
@@ -241,10 +243,12 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       malloc.free(hostnameStr);
     }
 
-    _libSsl.SSL_CTX_set_info_callback(
-      _dtlsClient._sslContext,
-      Pointer.fromFunction(_infoCallback),
-    );
+    _libSsl
+      ..SSL_CTX_set_info_callback(
+        sslContext,
+        Pointer.fromFunction(_infoCallback),
+      )
+      ..SSL_CTX_free(sslContext);
 
     if (_pskCredentialsCallback == null) {
       return;
@@ -254,32 +258,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
         Pointer.fromFunction(_pskCallback, _pskErrorCode);
 
     _libSsl.SSL_set_psk_client_callback(_ssl, callback);
-  }
-
-  static Future<_DtlsClientConnection> connect(
-    DtlsClient dtlsClient,
-    String? hostname,
-    InternetAddress address,
-    int port,
-    DtlsClientContext context,
-    OpenSsl libCrypto,
-    OpenSsl libSsl,
-  ) {
-    final ssl = libSsl.SSL_new(dtlsClient._sslContext);
-    final connection = _DtlsClientConnection(
-      dtlsClient,
-      hostname,
-      address,
-      port,
-      context,
-      ssl,
-      libCrypto,
-      libSsl,
-    );
-    final key = getConnectionKey(address, port);
-    dtlsClient._connectionCache[key] = connection;
-    DtlsClient._connections[ssl.address] = connection;
-    return connection._connect();
   }
 
   bool _closed = false;

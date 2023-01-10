@@ -26,9 +26,9 @@ void main() async {
       (await InternetAddress.lookup(hostname)).first;
   final peerPort = 5684;
 
-  final dtlsClient = await DtlsClient.bind('::', 0, context);
+  final dtlsClient = await DtlsClient.bind('::', 0);
 
-  final connection = await dtlsClient.connect(peerAddr, peerPort);
+  final connection = await dtlsClient.connect(peerAddr, peerPort, context);
 
   connection
     ..listen((datagram) async {
