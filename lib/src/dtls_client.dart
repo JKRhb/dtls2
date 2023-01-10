@@ -162,11 +162,15 @@ class DtlsClient {
   /// already exists, that connection will be reused instead of opening a new
   /// one. If you want to establish a connection using different credentials,
   /// then you need to close the old connection first.
+  ///
+  /// If a [timeout] duration is defined, a [TimeoutException] will be thrown
+  /// if no connection could be established within the given time period.
   Future<DtlsConnection> connect(
     InternetAddress address,
     int port,
     DtlsClientContext context, {
     String? hostname,
+    Duration? timeout,
   }) async {
     final key = getConnectionKey(address, port);
 
@@ -190,9 +194,7 @@ class DtlsClient {
     _connectionCache[key] = connection;
     DtlsClient._connections[connection._ssl.address] = connection;
 
-    return connection._connect();
-
-    return connection;
+    return connection._connect(timeout: timeout);
   }
 
   void _incoming(Uint8List input, _DtlsClientConnection connection) {
@@ -404,11 +406,24 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
   }
 
-  Future<_DtlsClientConnection> _connect() {
+  Future<_DtlsClientConnection> _connect({Duration? timeout}) {
     if (!_connectCompleter.isCompleted) {
       _connectToPeer();
     }
-    return _connectCompleter.future;
+
+    final future = _connectCompleter.future;
+
+    if (timeout != null) {
+      return future.timeout(
+        timeout,
+        onTimeout: () async {
+          await close();
+          throw TimeoutException("Handshake timed out.");
+        },
+      );
+    }
+
+    return future;
   }
 
   @override
@@ -438,15 +453,21 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       _dtlsClient._connectionCache.remove(address);
     }
 
-    _libSsl.SSL_shutdown(_ssl);
+    final connected = _connected;
 
-    _maintainState();
+    if (connected) {
+      _libSsl.SSL_shutdown(_ssl);
+      _maintainState();
+    }
 
     _libSsl.SSL_free(_ssl);
 
     _closed = true;
     _connected = false;
-    await _received.close();
+
+    if (connected) {
+      await _received.close();
+    }
   }
 
   void _maintainOutgoing() {
