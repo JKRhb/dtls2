@@ -1,3 +1,8 @@
+## 0.8.0
+
+- feat!: pass `DtlsClientContext` to `connect` method
+- feat: add `timeout` parameter to `connect` method
+
 ## 0.7.0
 
 - feat!: use `DynamicLibrary` objects for loading libssl and libcrpyto externally
