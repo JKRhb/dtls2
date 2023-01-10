@@ -1,3 +1,8 @@
+## 0.7.0
+
+- feat!: use `DynamicLibrary` objects for loading libssl and libcrpyto externally
+- feat!: don't expose `OpenSsl` ffi class
+
 ## 0.6.0
 
 - chore: update dependencies, upgrade to ffi 2.x.x
