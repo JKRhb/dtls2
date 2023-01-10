@@ -2,6 +2,7 @@
 // Copyright (c) 2021 Famedly GmbH
 // SPDX-License-Identifier: MIT
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -28,7 +29,18 @@ void main() async {
 
   final dtlsClient = await DtlsClient.bind('::', 0);
 
-  final connection = await dtlsClient.connect(peerAddr, peerPort, context);
+  final DtlsConnection connection;
+  try {
+    connection = await dtlsClient.connect(
+      peerAddr,
+      peerPort,
+      context,
+      timeout: Duration(seconds: 5),
+    );
+  } on TimeoutException {
+    await dtlsClient.close();
+    rethrow;
+  }
 
   connection
     ..listen((datagram) async {
