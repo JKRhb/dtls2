@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Jan Romann
 // SPDX-License-Identifier: MIT
 
-/// This [Exception] is thrown when an error occurs within dart_tinydtls.
+/// This [Exception] is thrown when a DTLS related error occurs.
 class DtlsException implements Exception {
   /// Constructor.
   DtlsException(this.message);
