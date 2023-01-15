@@ -11,6 +11,7 @@ import 'dart:typed_data';
 import 'package:dtls2/src/dtls_connection.dart';
 import 'package:ffi/ffi.dart';
 
+import 'buffer.dart';
 import 'dtls_exception.dart';
 import 'generated/ffi.dart';
 import 'lib.dart' as lib;
@@ -18,10 +19,6 @@ import 'psk_credentials.dart';
 import 'util.dart';
 
 const _pskErrorCode = 0;
-
-const _bufferSize = (1 << 16);
-
-final Pointer<Uint8> _buffer = malloc.call<Uint8>(_bufferSize);
 
 typedef _PskCallbackFunction = UnsignedInt Function(
   Pointer<SSL>,
@@ -31,11 +28,6 @@ typedef _PskCallbackFunction = UnsignedInt Function(
   Pointer<UnsignedChar>,
   UnsignedInt,
 );
-
-extension _DurationTimeval on timeval {
-  Duration get duration =>
-      Duration(seconds: tv_sec) + Duration(microseconds: tv_usec);
-}
 
 /// Client for connecting to DTLS Servers and sending UDP packets with encrpyted
 /// payloads afterwards.
@@ -101,7 +93,7 @@ class DtlsClient {
           final connection = _connectionCache[key];
 
           if (connection != null) {
-            _incoming(data.data, connection);
+            connection._incoming(data.data);
           }
         }
       }
@@ -197,16 +189,10 @@ class DtlsClient {
     return connection._connect(timeout: timeout);
   }
 
-  void _incoming(Uint8List input, _DtlsClientConnection connection) {
-    _buffer.asTypedList(_bufferSize).setAll(0, input);
-    _libCrypto.BIO_write(connection._rbio, _buffer.cast(), input.length);
-    connection._maintainState();
-  }
-
   int _send(_DtlsClientConnection dtlsClientConnection, List<int> data) {
-    _buffer.asTypedList(_bufferSize).setAll(0, data);
+    buffer.asTypedList(bufferSize).setAll(0, data);
     final ret = _libSsl.SSL_write(
-        dtlsClientConnection._ssl, _buffer.cast(), data.length);
+        dtlsClientConnection._ssl, buffer.cast(), data.length);
     dtlsClientConnection._maintainOutgoing();
     if (ret < 0) {
       dtlsClientConnection._handleError(ret, (e) => throw e);
@@ -358,11 +344,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     return connectionPsk.lengthInBytes;
   }
 
-  static bool _isFatalAlert(int ret) => ret << 8 == SSL3_AL_FATAL;
-  static bool _isCloseNotify(int ret) => ret & 0xff == SSL_AD_CLOSE_NOTIFY;
-  static bool _requiresClosing(int ret) =>
-      _isFatalAlert(ret) || _isCloseNotify(ret);
-
   static void _infoCallback(
     Pointer<SSL> ssl,
     int where,
@@ -374,7 +355,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       throw StateError("No DTLS Connection found for SSL object!");
     }
 
-    if (_requiresClosing(ret)) {
+    if (requiresClosing(ret)) {
       connection.close();
     }
   }
@@ -470,22 +451,28 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
   }
 
+  void _incoming(Uint8List input) {
+    buffer.asTypedList(bufferSize).setAll(0, input);
+    _libCrypto.BIO_write(_rbio, buffer.cast(), input.length);
+    _maintainState();
+  }
+
   void _maintainOutgoing() {
-    final ret = _libCrypto.BIO_read(_wbio, _buffer.cast(), _bufferSize);
+    final ret = _libCrypto.BIO_read(_wbio, buffer.cast(), bufferSize);
     if (ret > 0) {
-      _dtlsClient._socket.send(_buffer.asTypedList(ret), _address, _port);
+      _dtlsClient._socket.send(buffer.asTypedList(ret), _address, _port);
     }
     _timer?.cancel();
-    if (_libSsl.SSL_ctrl(_ssl, DTLS_CTRL_GET_TIMEOUT, 0, _buffer.cast()) > 0) {
-      _timer = Timer(_buffer.cast<timeval>().ref.duration, _maintainState);
+    if (_libSsl.SSL_ctrl(_ssl, DTLS_CTRL_GET_TIMEOUT, 0, buffer.cast()) > 0) {
+      _timer = Timer(buffer.cast<timeval>().ref.duration, _maintainState);
     }
   }
 
   void _maintainState() {
     if (_connectCompleter.isCompleted) {
-      final ret = _libSsl.SSL_read(_ssl, _buffer.cast(), _bufferSize);
+      final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
       if (ret > 0) {
-        final data = Uint8List.fromList(_buffer.asTypedList(ret));
+        final data = Uint8List.fromList(buffer.asTypedList(ret));
         final datagram = Datagram(data, _address, _port);
         _received.add(datagram);
         _maintainOutgoing();
