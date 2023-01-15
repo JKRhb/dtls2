@@ -1,3 +1,7 @@
+## 0.8.2
+
+- docs: fix documentation of `DtlsException`
+
 ## 0.8.1
 
 - fix(client): improve connection closing behavior
