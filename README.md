@@ -7,19 +7,22 @@
 DTLS provides datagram socket encryption. Implemented using OpenSSL over FFI.
 This package supports native platforms only, because there are no datagram sockets on Web.
 It is based on the [`dtls`](https://pub.dev/packages/dtls) package which was
-discontinued by its maintainers.
+discontinued by its maintainers but offers a more convenient API as well as
+additional features.
 
 ## Features
 
-Currently, only the client side is implemented, providing support for DTLS in
-PKI and PSK mode.
-The library is compatible with both OpenSSL 1.1 and OpenSSL 3.
+The library provides both a client and a server implementation with support
+for DTLS in PKI and PSK mode.
+It is compatible with both OpenSSL 1.1 and OpenSSL 3.
 
 ## Limitations
 
-During the DTLS handshake, messages currently get corrupted when too many
-cipher suites are offered to the server, making it impossible to complete the
-handshake.
+Connecting to a server currently does not seem to work on macOS.
+
+Futhermore, during the DTLS handshake, messages currently get corrupted when too
+many cipher suites are offered to the server, making it impossible to complete
+the handshake.
 The issue will probably be fixed with the release of OpenSSL 3.2.
 
 To circumvent the problem, you can specify a specific set of ciphers in the
@@ -44,7 +47,7 @@ On Linux, libssl and libcrypto are preinstalled or available in most distributio
 
 ## Usage
 
-First, create a `DtlsClientContext`.
+In order to connect to a DTLS server, first create a `DtlsClientContext`.
 The context can be configured to use a certain set of ciphers and/or a callback
 function for Pre-Shared Keys.
 
@@ -59,6 +62,12 @@ incoming data.
 Incoming data is wrapped in `Datagram` objects, which makes it easier to
 integrate the library in contexts where `RawDatagramSocket`s are already being
 used.
+
+In similar way, you can create a `DtlsServer` based on a `DtlsServerContext`.
+Servers implement the `Stream` interface, which means that you can `listen`
+for incoming connections.
+Once a connection has been established, you can use the same API as the one
+offered by the client side, calling `send` and `listen`.
 
 Once the data exchange is finished, you can either close the connection or the
 client.
