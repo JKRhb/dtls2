@@ -1,3 +1,9 @@
+## 0.9.0
+
+- feat: replace `TlsException`s with `DtlsException`
+- feat: add DTLS server implementation
+- docs: update README
+
 ## 0.8.2
 
 - docs: fix documentation of `DtlsException`
