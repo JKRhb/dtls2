@@ -9,30 +9,74 @@ import 'dart:typed_data';
 
 import 'package:dtls2/dtls2.dart';
 
+const _identity = "Client_identity";
+
+const _preSharedKey = "secretPSK";
+
+final _serverKeyStore = {_identity: _preSharedKey};
+
+const _ciphers = "PSK-AES128-CCM8";
+
+Uint8List? _serverPskCallback(Uint8List identity) {
+  final identityString = utf8.decode(identity.toList());
+
+  final psk = _serverKeyStore[identityString];
+
+  if (psk == null) {
+    return null;
+  }
+
+  return Uint8List.fromList(utf8.encode(psk));
+}
+
 final context = DtlsClientContext(
   verify: true,
   withTrustedRoots: true,
-  ciphers: 'PSK-AES128-CCM8',
+  ciphers: _ciphers,
   pskCredentialsCallback: (identityHint) {
     return PskCredentials(
-      identity: Uint8List.fromList(utf8.encode("Client_identity")),
-      preSharedKey: Uint8List.fromList(utf8.encode("secretPSK")),
+      identity: Uint8List.fromList(utf8.encode(_identity)),
+      preSharedKey: Uint8List.fromList(utf8.encode(_preSharedKey)),
     );
   },
 );
 
 void main() async {
-  final hostname = 'californium.eclipseprojects.io';
-  final peerAddr = InternetAddress.tryParse(hostname) ??
-      (await InternetAddress.lookup(hostname)).first;
+  const bindAddress = "::";
+  final peerAddress = InternetAddress("::1");
   final peerPort = 5684;
 
-  final dtlsClient = await DtlsClient.bind('::', 0);
+  final dtlsServer = await DtlsServer.bind(
+      bindAddress,
+      peerPort,
+      DtlsServerContext(
+        pskKeyStoreCallback: _serverPskCallback,
+        ciphers: _ciphers,
+      ));
+
+  dtlsServer.listen(
+    (connection) {
+      connection.listen(
+        (event) async {
+          print(utf8.decode(event.data));
+          connection.send(Uint8List.fromList(utf8.encode('Bye World')));
+          await connection.close();
+        },
+        onDone: () async {
+          await dtlsServer.close();
+          print("Server connection closed.");
+        },
+      );
+    },
+    onDone: () => print("Server closed."),
+  );
+
+  final dtlsClient = await DtlsClient.bind(bindAddress, 0);
 
   final DtlsConnection connection;
   try {
     connection = await dtlsClient.connect(
-      peerAddr,
+      peerAddress,
       peerPort,
       context,
       timeout: Duration(seconds: 5),
@@ -43,13 +87,16 @@ void main() async {
   }
 
   connection
-    ..listen((datagram) async {
-      print(datagram.data.toString());
-      await connection.close();
-      print('Connection closed');
-    }, onDone: () async {
-      await dtlsClient.close();
-      print('Client closed');
-    })
+    ..listen(
+      (datagram) async {
+        print(utf8.decode(datagram.data));
+        await connection.close();
+        print('Client connection closed.');
+      },
+      onDone: () async {
+        await dtlsClient.close();
+        print('Client closed.');
+      },
+    )
     ..send(Uint8List.fromList(utf8.encode('Hello World')));
 }
