@@ -11,6 +11,7 @@ environment:
   sdk: '>=2.13.0 <3.0.0'
 
 dependencies:
+  collection: ^1.17.0
   ffi: ^2.0.1
 
 dev_dependencies:
