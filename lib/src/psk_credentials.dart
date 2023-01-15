@@ -6,9 +6,8 @@ import 'dart:typed_data';
 /// Function signature for a callback function for retrieving/generating
 /// [PskCredentials].
 ///
-/// As the format of the [identityHint] is not well-defined, this parameter
-/// can probably be ignored in most cases, when both the identity and the key
-/// are known in advance.
+/// Servers might provide an [identityHint] that contains information on how
+/// to generate the credentials.
 typedef PskCredentialsCallback = PskCredentials Function(
   Uint8List identityHint,
 );
