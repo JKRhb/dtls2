@@ -11,6 +11,7 @@ environment:
   sdk: '>=2.13.0 <3.0.0'
 
 dependencies:
+  collection: ^1.17.0
   ffi: ^2.0.1
 
 dev_dependencies:
@@ -41,7 +42,10 @@ ffigen:
       - BIO_s_mem
       - BIO_write
       - BIO_free
+      - BIO_ADDR_new
+      - BIO_ADDR_free
       - DTLS_client_method
+      - DTLS_server_method
       - ERR_get_error
       - ERR_error_string
       - SSL_CTX_new
@@ -49,6 +53,7 @@ ffigen:
       - SSL_CTX_set_default_verify_paths
       - SSL_CTX_set_verify
       - SSL_connect
+      - SSL_accept
       - SSL_ctrl
       - SSL_free
       - SSL_shutdown
@@ -66,6 +71,12 @@ ffigen:
       - X509_free
       - SSL_CTX_free
       - SSL_CTX_set_info_callback
+      - DTLSv1_listen
+      - SSL_CTX_set_cookie_generate_cb
+      - SSL_CTX_set_cookie_verify_cb
+      - SSL_CTX_set_psk_server_callback
+      - SSL_CTX_use_psk_identity_hint
+      - SSL_set_accept_state
   macros:
     include:
       - BIO_C_SET_BUF_MEM_EOF_RETURN
@@ -78,6 +89,7 @@ ffigen:
       - DTLS_CTRL_GET_TIMEOUT
       - SSL_AD_CLOSE_NOTIFY
       - SSL3_AL_FATAL
+      - SSL_AD_UNEXPECTED_MESSAGE
   structs:
     include:
       - timeval
