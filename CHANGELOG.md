@@ -1,3 +1,8 @@
+## 0.8.1
+
+- fix(client): improve connection closing behavior
+- refactor: refactor DTLS client
+
 ## 0.8.0
 
 - feat!: pass `DtlsClientContext` to `connect` method
