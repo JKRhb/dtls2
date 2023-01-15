@@ -119,6 +119,30 @@ class OpenSsl {
   late final _BIO_s_mem =
       _BIO_s_memPtr.asFunction<ffi.Pointer<BIO_METHOD> Function()>();
 
+  ffi.Pointer<BIO_ADDR> BIO_ADDR_new() {
+    return _BIO_ADDR_new();
+  }
+
+  late final _BIO_ADDR_newPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<BIO_ADDR> Function()>>(
+          'BIO_ADDR_new');
+  late final _BIO_ADDR_new =
+      _BIO_ADDR_newPtr.asFunction<ffi.Pointer<BIO_ADDR> Function()>();
+
+  void BIO_ADDR_free(
+    ffi.Pointer<BIO_ADDR> arg0,
+  ) {
+    return _BIO_ADDR_free(
+      arg0,
+    );
+  }
+
+  late final _BIO_ADDR_freePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<BIO_ADDR>)>>(
+          'BIO_ADDR_free');
+  late final _BIO_ADDR_free =
+      _BIO_ADDR_freePtr.asFunction<void Function(ffi.Pointer<BIO_ADDR>)>();
+
   int X509_STORE_add_cert(
     ffi.Pointer<X509_STORE> ctx,
     ffi.Pointer<X509> x,
@@ -223,6 +247,77 @@ class OpenSsl {
                       ffi.Void Function(
                           ffi.Pointer<SSL>, ffi.Int, ffi.Int)>>)>();
 
+  void SSL_CTX_set_cookie_generate_cb(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<
+            ffi.NativeFunction<
+                ffi.Int Function(
+                    ffi.Pointer<SSL>,
+                    ffi.Pointer<ffi.UnsignedChar>,
+                    ffi.Pointer<ffi.UnsignedInt>)>>
+        app_gen_cookie_cb,
+  ) {
+    return _SSL_CTX_set_cookie_generate_cb(
+      ctx,
+      app_gen_cookie_cb,
+    );
+  }
+
+  late final _SSL_CTX_set_cookie_generate_cbPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Pointer<SSL_CTX>,
+                  ffi.Pointer<
+                      ffi.NativeFunction<
+                          ffi.Int Function(
+                              ffi.Pointer<SSL>,
+                              ffi.Pointer<ffi.UnsignedChar>,
+                              ffi.Pointer<ffi.UnsignedInt>)>>)>>(
+      'SSL_CTX_set_cookie_generate_cb');
+  late final _SSL_CTX_set_cookie_generate_cb =
+      _SSL_CTX_set_cookie_generate_cbPtr.asFunction<
+          void Function(
+              ffi.Pointer<SSL_CTX>,
+              ffi.Pointer<
+                  ffi.NativeFunction<
+                      ffi.Int Function(
+                          ffi.Pointer<SSL>,
+                          ffi.Pointer<ffi.UnsignedChar>,
+                          ffi.Pointer<ffi.UnsignedInt>)>>)>();
+
+  void SSL_CTX_set_cookie_verify_cb(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<
+            ffi.NativeFunction<
+                ffi.Int Function(ffi.Pointer<SSL>,
+                    ffi.Pointer<ffi.UnsignedChar>, ffi.UnsignedInt)>>
+        app_verify_cookie_cb,
+  ) {
+    return _SSL_CTX_set_cookie_verify_cb(
+      ctx,
+      app_verify_cookie_cb,
+    );
+  }
+
+  late final _SSL_CTX_set_cookie_verify_cbPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Pointer<SSL_CTX>,
+              ffi.Pointer<
+                  ffi.NativeFunction<
+                      ffi.Int Function(
+                          ffi.Pointer<SSL>,
+                          ffi.Pointer<ffi.UnsignedChar>,
+                          ffi.UnsignedInt)>>)>>('SSL_CTX_set_cookie_verify_cb');
+  late final _SSL_CTX_set_cookie_verify_cb =
+      _SSL_CTX_set_cookie_verify_cbPtr.asFunction<
+          void Function(
+              ffi.Pointer<SSL_CTX>,
+              ffi.Pointer<
+                  ffi.NativeFunction<
+                      ffi.Int Function(ffi.Pointer<SSL>,
+                          ffi.Pointer<ffi.UnsignedChar>, ffi.UnsignedInt)>>)>();
+
   void SSL_set_psk_client_callback(
     ffi.Pointer<SSL> ssl,
     SSL_psk_client_cb_func cb,
@@ -239,6 +334,41 @@ class OpenSsl {
               SSL_psk_client_cb_func)>>('SSL_set_psk_client_callback');
   late final _SSL_set_psk_client_callback = _SSL_set_psk_client_callbackPtr
       .asFunction<void Function(ffi.Pointer<SSL>, SSL_psk_client_cb_func)>();
+
+  void SSL_CTX_set_psk_server_callback(
+    ffi.Pointer<SSL_CTX> ctx,
+    SSL_psk_server_cb_func cb,
+  ) {
+    return _SSL_CTX_set_psk_server_callback(
+      ctx,
+      cb,
+    );
+  }
+
+  late final _SSL_CTX_set_psk_server_callbackPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<SSL_CTX>,
+              SSL_psk_server_cb_func)>>('SSL_CTX_set_psk_server_callback');
+  late final _SSL_CTX_set_psk_server_callback =
+      _SSL_CTX_set_psk_server_callbackPtr.asFunction<
+          void Function(ffi.Pointer<SSL_CTX>, SSL_psk_server_cb_func)>();
+
+  int SSL_CTX_use_psk_identity_hint(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<ffi.Char> identity_hint,
+  ) {
+    return _SSL_CTX_use_psk_identity_hint(
+      ctx,
+      identity_hint,
+    );
+  }
+
+  late final _SSL_CTX_use_psk_identity_hintPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<SSL_CTX>,
+              ffi.Pointer<ffi.Char>)>>('SSL_CTX_use_psk_identity_hint');
+  late final _SSL_CTX_use_psk_identity_hint = _SSL_CTX_use_psk_identity_hintPtr
+      .asFunction<int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>)>();
 
   int SSL_CTX_set_cipher_list(
     ffi.Pointer<SSL_CTX> arg0,
@@ -382,6 +512,20 @@ class OpenSsl {
   late final _SSL_free =
       _SSL_freePtr.asFunction<void Function(ffi.Pointer<SSL>)>();
 
+  int SSL_accept(
+    ffi.Pointer<SSL> ssl,
+  ) {
+    return _SSL_accept(
+      ssl,
+    );
+  }
+
+  late final _SSL_acceptPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<SSL>)>>(
+          'SSL_accept');
+  late final _SSL_accept =
+      _SSL_acceptPtr.asFunction<int Function(ffi.Pointer<SSL>)>();
+
   int SSL_connect(
     ffi.Pointer<SSL> ssl,
   ) {
@@ -471,6 +615,16 @@ class OpenSsl {
   late final _SSL_get_error =
       _SSL_get_errorPtr.asFunction<int Function(ffi.Pointer<SSL>, int)>();
 
+  ffi.Pointer<SSL_METHOD> DTLS_server_method() {
+    return _DTLS_server_method();
+  }
+
+  late final _DTLS_server_methodPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<SSL_METHOD> Function()>>(
+          'DTLS_server_method');
+  late final _DTLS_server_method =
+      _DTLS_server_methodPtr.asFunction<ffi.Pointer<SSL_METHOD> Function()>();
+
   ffi.Pointer<SSL_METHOD> DTLS_client_method() {
     return _DTLS_client_method();
   }
@@ -495,6 +649,20 @@ class OpenSsl {
   late final _SSL_shutdown =
       _SSL_shutdownPtr.asFunction<int Function(ffi.Pointer<SSL>)>();
 
+  void SSL_set_accept_state(
+    ffi.Pointer<SSL> s,
+  ) {
+    return _SSL_set_accept_state(
+      s,
+    );
+  }
+
+  late final _SSL_set_accept_statePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<SSL>)>>(
+          'SSL_set_accept_state');
+  late final _SSL_set_accept_state =
+      _SSL_set_accept_statePtr.asFunction<void Function(ffi.Pointer<SSL>)>();
+
   int SSL_CTX_set_default_verify_paths(
     ffi.Pointer<SSL_CTX> ctx,
   ) {
@@ -509,6 +677,23 @@ class OpenSsl {
   late final _SSL_CTX_set_default_verify_paths =
       _SSL_CTX_set_default_verify_pathsPtr.asFunction<
           int Function(ffi.Pointer<SSL_CTX>)>();
+
+  int DTLSv1_listen(
+    ffi.Pointer<SSL> s,
+    ffi.Pointer<BIO_ADDR> client,
+  ) {
+    return _DTLSv1_listen(
+      s,
+      client,
+    );
+  }
+
+  late final _DTLSv1_listenPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(
+              ffi.Pointer<SSL>, ffi.Pointer<BIO_ADDR>)>>('DTLSv1_listen');
+  late final _DTLSv1_listen = _DTLSv1_listenPtr.asFunction<
+      int Function(ffi.Pointer<SSL>, ffi.Pointer<BIO_ADDR>)>();
 
   int ERR_get_error() {
     return _ERR_get_error();
@@ -554,6 +739,10 @@ typedef BIO_METHOD = bio_method_st;
 
 class bio_method_st extends ffi.Opaque {}
 
+typedef BIO_ADDR = bio_addr_st;
+
+class bio_addr_st extends ffi.Opaque {}
+
 typedef X509_STORE = x509_store_st;
 
 class x509_store_st extends ffi.Opaque {}
@@ -583,6 +772,10 @@ typedef SSL_psk_client_cb_func = ffi.Pointer<
             ffi.UnsignedInt,
             ffi.Pointer<ffi.UnsignedChar>,
             ffi.UnsignedInt)>>;
+typedef SSL_psk_server_cb_func = ffi.Pointer<
+    ffi.NativeFunction<
+        ffi.UnsignedInt Function(ffi.Pointer<SSL>, ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.UnsignedChar>, ffi.UnsignedInt)>>;
 typedef SSL_METHOD = ssl_method_st;
 
 class ssl_method_st extends ffi.Opaque {}
@@ -604,6 +797,8 @@ const int SSL_VERIFY_NONE = 0;
 const int SSL_VERIFY_PEER = 1;
 
 const int SSL_AD_CLOSE_NOTIFY = 0;
+
+const int SSL_AD_UNEXPECTED_MESSAGE = 10;
 
 const int SSL_ERROR_SSL = 1;
 
