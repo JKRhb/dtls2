@@ -365,7 +365,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   void _handleError(int ret, void Function(Exception) errorHandler) {
     final code = _libSsl.SSL_get_error(_ssl, ret);
     if (code == SSL_ERROR_SSL) {
-      errorHandler(TlsException(
+      errorHandler(DtlsException(
           _libCrypto.ERR_error_string(_libCrypto.ERR_get_error(), nullptr)
               .cast<Utf8>()
               .toDartString()));
@@ -381,7 +381,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       _connected = true;
       _connectCompleter.complete(this);
     } else if (ret == 0) {
-      _connectCompleter.completeError(TlsException('handshake shut down'));
+      _connectCompleter.completeError(DtlsException('handshake shut down'));
     } else {
       _handleError(ret, _connectCompleter.completeError);
     }
