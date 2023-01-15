@@ -430,13 +430,15 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
     if (!closedByClient) {
       // This distinction is made to avoid concurrent modification errors.
-      final address = DtlsClient._connections.remove(_ssl.address);
-      _dtlsClient._connectionCache.remove(address);
+      DtlsClient._connections.remove(_ssl.address);
+      final connectionCacheKey = getConnectionKey(_address, _port);
+      _dtlsClient._connectionCache.remove(connectionCacheKey);
     }
 
     final connected = _connected;
 
     if (connected) {
+      _connected = false;
       _libSsl.SSL_shutdown(_ssl);
       _maintainState();
     }
