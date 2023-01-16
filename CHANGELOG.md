@@ -1,3 +1,8 @@
+## 0.10.0
+
+- chore!: bump required Dart version to 2.17
+- refactor: refactor alert handling using enhanced enums
+
 ## 0.9.0
 
 - feat: replace `TlsException`s with `DtlsException`
