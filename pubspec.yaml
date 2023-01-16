@@ -8,7 +8,7 @@ version: 0.9.0
 repository: https://github.com/JKRhb/dtls2
 
 environment:
-  sdk: '>=2.13.0 <3.0.0'
+  sdk: '>=2.17.0 <3.0.0'
 
 dependencies:
   collection: ^1.17.0
