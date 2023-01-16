@@ -106,4 +106,17 @@ void main() {
       ]
     },
   );
+
+  test('Parse DTLS alerts', () {
+    final code = 1 << 8;
+
+    final alert = DtlsAlert.fromCode(code);
+    expect(alert?.alertLevel, AlertLevel.warning);
+    expect(alert?.alertDescription, AlertDescription.closeNotify);
+    expect(alert?.requiresClosing, true);
+    expect(
+      alert?.toString(),
+      "DtlsEvent with Alert Level 'Warning' and description 'close_notify'.",
+    );
+  });
 }
