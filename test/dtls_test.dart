@@ -8,6 +8,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dtls2/dtls2.dart';
+import 'package:dtls2/src/dtls_alert.dart';
 import 'package:test/test.dart';
 
 const ciphers = "PSK-AES128-CCM8";
