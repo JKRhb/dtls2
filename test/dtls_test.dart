@@ -8,6 +8,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dtls2/dtls2.dart';
+import 'package:dtls2/src/dtls_alert.dart';
 import 'package:test/test.dart';
 
 const ciphers = "PSK-AES128-CCM8";
@@ -105,4 +106,17 @@ void main() {
       ]
     },
   );
+
+  test('Parse DTLS alerts', () {
+    final code = 1 << 8;
+
+    final alert = DtlsAlert.fromCode(code);
+    expect(alert?.alertLevel, AlertLevel.warning);
+    expect(alert?.alertDescription, AlertDescription.closeNotify);
+    expect(alert?.requiresClosing, true);
+    expect(
+      alert?.toString(),
+      "DtlsEvent with Alert Level 'Warning' and description 'close_notify'.",
+    );
+  });
 }

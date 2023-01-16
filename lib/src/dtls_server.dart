@@ -12,6 +12,7 @@ import 'package:collection/collection.dart';
 import 'package:ffi/ffi.dart';
 
 import 'buffer.dart';
+import 'dtls_alert.dart';
 import 'dtls_connection.dart';
 import 'dtls_exception.dart';
 import 'generated/ffi.dart';
@@ -368,6 +369,12 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
       close();
     }
   }
+
+  void _handleDtlsEvent(DtlsAlert event) {
+    if (event.requiresClosing) {
+      close();
+    }
+  }
 }
 
 /// The context contains settings for DTLS session establishment.
@@ -512,10 +519,16 @@ void _infoCallback(
   int where,
   int ret,
 ) {
+  if (!where.isAlert) {
+    return;
+  }
+
   final connection = _getServerConnection(ssl);
 
-  if (requiresClosing(ret)) {
-    connection.close();
+  final event = DtlsAlert.fromCode(ret);
+
+  if (event != null) {
+    connection._handleDtlsEvent(event);
   }
 }
 

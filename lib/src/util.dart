@@ -19,8 +19,10 @@ extension DurationTimeval on timeval {
       Duration(seconds: tv_sec) + Duration(microseconds: tv_usec);
 }
 
-bool _isFatalAlert(int ret) => ret << 8 == SSL3_AL_FATAL;
-bool _isCloseNotify(int ret) => ret & 0xff == SSL_AD_CLOSE_NOTIFY;
-
-/// Determines if a DTLS alarm code requires closing the connection.
-bool requiresClosing(int ret) => _isFatalAlert(ret) || _isCloseNotify(ret);
+/// Extension for making it easier to parse encoded values in OpenSSL's
+/// info callback.
+extension InfoCallbackUtilities on int {
+  /// Determines if the `where` parameter of the info callback is referring to
+  /// a DTLS alert.
+  bool get isAlert => this & 0x4000 > 0;
+}

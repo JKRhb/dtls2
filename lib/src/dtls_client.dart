@@ -12,6 +12,7 @@ import 'package:dtls2/src/dtls_connection.dart';
 import 'package:ffi/ffi.dart';
 
 import 'buffer.dart';
+import 'dtls_alert.dart';
 import 'dtls_exception.dart';
 import 'generated/ffi.dart';
 import 'lib.dart' as lib;
@@ -344,19 +345,31 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     return connectionPsk.lengthInBytes;
   }
 
+  void _handleAlert(DtlsAlert event) {
+    if (event.requiresClosing) {
+      close();
+    }
+  }
+
   static void _infoCallback(
     Pointer<SSL> ssl,
     int where,
     int ret,
   ) {
+    if (!where.isAlert) {
+      return;
+    }
+
     final connection = DtlsClient._connections[ssl.address];
 
     if (connection == null) {
       throw StateError("No DTLS Connection found for SSL object!");
     }
 
-    if (requiresClosing(ret)) {
-      connection.close();
+    final event = DtlsAlert.fromCode(ret);
+
+    if (event != null) {
+      connection._handleAlert(event);
     }
   }
 
