@@ -134,8 +134,9 @@ void main() {
     );
   });
 
+  // TODO(JKRhb): Remove once issus with DTLS server on macOS have been resolved
   test(
-    'Client and server test',
+    'Client test with external server',
     () async {
       final completer = Completer<void>();
       const port = 5684;
