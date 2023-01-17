@@ -81,6 +81,7 @@ class DtlsClient {
         case RawSocketEvent.read:
           final data = _socket.receive();
           if (data != null) {
+            print("Client receive: $data");
             final connection = _retrieveConnection(data.address, data.port);
 
             if (connection != null) {
