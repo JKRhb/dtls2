@@ -81,6 +81,7 @@ class DtlsClient {
         case RawSocketEvent.read:
           final data = _socket.receive();
           if (data != null) {
+            print("Client receive: $data");
             final connection = _retrieveConnection(data.address, data.port);
 
             if (connection != null) {
@@ -545,8 +546,9 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     final int bytesSent;
 
     if (ret > 0) {
-      bytesSent =
-          _dtlsClient._socket.send(buffer.asTypedList(ret), _address, _port);
+      final data = buffer.asTypedList(ret);
+      print("Client send: $data");
+      bytesSent = _dtlsClient._socket.send(data, _address, _port);
     } else {
       bytesSent = -1;
     }
