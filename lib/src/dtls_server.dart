@@ -100,43 +100,55 @@ class DtlsServer extends Stream<DtlsConnection> {
     ).._externalSocket = false;
   }
 
+  void _handleSocketRead() {
+    final datagram = _socket.receive();
+    if (datagram != null) {
+      final data = datagram.data;
+      final address = datagram.address;
+      final port = datagram.port;
+      final connectionKey = getConnectionKey(address, port);
+
+      var connection = _connectionCache[connectionKey];
+
+      if (connection == null) {
+        // TODO(JKRhb): Check if there is a better way to assert this.
+        if (!data.isValidClientHello()) {
+          return;
+        }
+
+        final ssl = _libSsl.SSL_new(_sslContext);
+        // _libSsl.SSL_set_options(ssl, SSL_OP_COOKIE_EXCHANGE);
+
+        connection = _DtlsServerConnection(
+          this,
+          address,
+          port,
+          _context,
+          ssl,
+          _libCrypto,
+          _libSsl,
+        );
+
+        _connectionCache[connectionKey] = connection;
+        _connections[ssl.address] = connection;
+      }
+
+      connection._incoming(data);
+    }
+  }
+
   void _startListening() {
     _socket.listen((event) async {
-      if (event == RawSocketEvent.read) {
-        final datagram = _socket.receive();
-        if (datagram != null) {
-          final data = datagram.data;
-          final address = datagram.address;
-          final port = datagram.port;
-          final connectionKey = getConnectionKey(address, port);
-
-          var connection = _connectionCache[connectionKey];
-
-          if (connection == null) {
-            // TODO(JKRhb): Check if there is a better way to assert this.
-            if (!data.isValidClientHello()) {
-              return;
-            }
-
-            final ssl = _libSsl.SSL_new(_sslContext);
-            // _libSsl.SSL_set_options(ssl, SSL_OP_COOKIE_EXCHANGE);
-
-            connection = _DtlsServerConnection(
-              this,
-              address,
-              port,
-              _context,
-              ssl,
-              _libCrypto,
-              _libSsl,
-            );
-
-            _connectionCache[connectionKey] = connection;
-            _connections[ssl.address] = connection;
-          }
-
-          connection._incoming(data);
-        }
+      switch (event) {
+        case RawSocketEvent.read:
+          _handleSocketRead();
+          break;
+        case RawSocketEvent.closed:
+          await close();
+          break;
+        case RawSocketEvent.readClosed:
+        case RawSocketEvent.write:
+          break;
       }
     });
   }
