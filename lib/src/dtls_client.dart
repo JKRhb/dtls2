@@ -87,16 +87,25 @@ class DtlsClient {
 
   void _startListening() {
     _socket.listen((event) async {
-      if (event == RawSocketEvent.read) {
-        final data = _socket.receive();
-        if (data != null) {
-          final key = getConnectionKey(data.address, data.port);
-          final connection = _connectionCache[key];
+      switch (event) {
+        case RawSocketEvent.read:
+          final data = _socket.receive();
+          if (data != null) {
+            final key = getConnectionKey(data.address, data.port);
+            final connection = _connectionCache[key];
 
-          if (connection != null) {
-            connection._incoming(data.data);
+            if (connection != null) {
+              connection._incoming(data.data);
+            }
           }
-        }
+
+          break;
+        case RawSocketEvent.closed:
+          await close();
+          break;
+        case RawSocketEvent.readClosed:
+        case RawSocketEvent.write:
+          break;
       }
     });
   }
