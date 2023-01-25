@@ -635,6 +635,22 @@ class OpenSsl {
   late final _DTLS_client_method =
       _DTLS_client_methodPtr.asFunction<ffi.Pointer<SSL_METHOD> Function()>();
 
+  ffi.Pointer<stack_st_SSL_CIPHER> SSL_get1_supported_ciphers(
+    ffi.Pointer<SSL> s,
+  ) {
+    return _SSL_get1_supported_ciphers(
+      s,
+    );
+  }
+
+  late final _SSL_get1_supported_ciphersPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<stack_st_SSL_CIPHER> Function(
+              ffi.Pointer<SSL>)>>('SSL_get1_supported_ciphers');
+  late final _SSL_get1_supported_ciphers =
+      _SSL_get1_supported_ciphersPtr.asFunction<
+          ffi.Pointer<stack_st_SSL_CIPHER> Function(ffi.Pointer<SSL>)>();
+
   int SSL_shutdown(
     ffi.Pointer<SSL> s,
   ) {
@@ -785,6 +801,8 @@ typedef SSL_verify_cb = ffi.Pointer<
 typedef X509_STORE_CTX = x509_store_ctx_st;
 
 class x509_store_ctx_st extends ffi.Opaque {}
+
+class stack_st_SSL_CIPHER extends ffi.Opaque {}
 
 const int BIO_C_SET_BUF_MEM_EOF_RETURN = 130;
 

@@ -63,6 +63,7 @@ ffigen:
       - SSL_read
       - SSL_set_bio
       - SSL_write
+      - SSL_get1_supported_ciphers
       - X509_VERIFY_PARAM_set1_host
       - SSL_CTX_get_cert_store
       - SSL_set_psk_client_callback
