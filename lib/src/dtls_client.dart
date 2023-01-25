@@ -192,6 +192,7 @@ class DtlsClient {
       _libCrypto,
       _libSsl,
     );
+    await connection._checkSslCiphers();
 
     _connectionCache[key] = connection;
     DtlsClient._connections[connection._ssl.address] = connection;
@@ -286,6 +287,25 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   final OpenSsl _libSsl;
 
   final OpenSsl _libCrypto;
+
+  /// Throws a [DtlsException] if no ciphers are available for this connection
+  /// attempt.
+  ///
+  /// If this is the case, the allocated resources are cleaned up by calling the
+  /// [close] method.
+  Future<void> _checkSslCiphers() async {
+    // TODO(JKRhb): Could this method get called from a constructor?
+    final ciphersPointer = _libSsl.SSL_get1_supported_ciphers(_ssl);
+
+    if (ciphersPointer == nullptr) {
+      await close(closedByClient: true);
+      throw DtlsException(
+        "No ciphers available. "
+        "If you are using PSK cipher suites, check you have defined a "
+        "pskCredentialsCallback.",
+      );
+    }
+  }
 
   static Uint8List _determineIdentityHint(
     Pointer<Char> hint,
