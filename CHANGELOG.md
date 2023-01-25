@@ -1,3 +1,9 @@
+## 0.11.0
+
+- fix(dtls_client): throw exception if no ciphers are available
+- fix: close client and server when the underlying socket is closed
+- fix: export `DtlsException` class
+
 ## 0.10.0
 
 - chore!: bump required Dart version to 2.17
