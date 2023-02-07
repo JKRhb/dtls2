@@ -307,30 +307,12 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
   }
 
-  static Uint8List _determineIdentityHint(
-    Pointer<Char> hint,
-    int maxIdentityLength,
-  ) {
+  static String? _determineIdentityHint(Pointer<Char> hint) {
     if (hint == nullptr) {
-      return Uint8List(0);
+      return null;
     }
 
-    final identityHintBytes = <int>[];
-    const nullTerminator = 0;
-    var index = 0;
-
-    while (index < maxIdentityLength) {
-      final currentValue = hint.elementAt(index).value;
-      identityHintBytes.add(currentValue);
-
-      if (currentValue == nullTerminator) {
-        break;
-      }
-
-      index++;
-    }
-
-    return Uint8List.fromList(identityHintBytes);
+    return hint.cast<Utf8>().toDartString();
   }
 
   static int _pskCallback(
@@ -346,7 +328,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       throw StateError("No DTLS Connection found for SSL object!");
     }
 
-    final identityHint = _determineIdentityHint(hint, maxIdentityLength);
+    final identityHint = _determineIdentityHint(hint);
 
     final pskCredentials =
         connection._pskCredentialsCallback?.call(identityHint);
