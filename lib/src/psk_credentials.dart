@@ -1,8 +1,6 @@
 // Copyright (c) 2023 Jan Romann
 // SPDX-License-Identifier: MIT
 
-import 'dart:typed_data';
-
 /// Function signature for a callback function for retrieving/generating
 /// [PskCredentials].
 ///
@@ -16,10 +14,10 @@ typedef PskCredentialsCallback = PskCredentials Function(
 /// and a [preSharedKey].
 class PskCredentials {
   /// The identity used with the [preSharedKey].
-  Uint8List identity;
+  Iterable<int> identity;
 
   /// The actual pre-shared key.
-  Uint8List preSharedKey;
+  Iterable<int> preSharedKey;
 
   /// Constructor
   PskCredentials({required this.identity, required this.preSharedKey});

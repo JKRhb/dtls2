@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dtls2/dtls2.dart';
 
@@ -17,8 +16,8 @@ final _serverKeyStore = {_identity: _preSharedKey};
 
 const _ciphers = "PSK-AES128-CCM8";
 
-Uint8List? _serverPskCallback(Uint8List identity) {
-  final identityString = utf8.decode(identity.toList());
+Iterable<int>? _serverPskCallback(List<int> identity) {
+  final identityString = utf8.decode(identity);
 
   final psk = _serverKeyStore[identityString];
 
@@ -26,7 +25,7 @@ Uint8List? _serverPskCallback(Uint8List identity) {
     return null;
   }
 
-  return Uint8List.fromList(utf8.encode(psk));
+  return utf8.encode(psk);
 }
 
 final context = DtlsClientContext(
@@ -36,8 +35,8 @@ final context = DtlsClientContext(
   pskCredentialsCallback: (identityHint) {
     print(identityHint);
     return PskCredentials(
-      identity: Uint8List.fromList(utf8.encode(_identity)),
-      preSharedKey: Uint8List.fromList(utf8.encode(_preSharedKey)),
+      identity: utf8.encode(_identity),
+      preSharedKey: utf8.encode(_preSharedKey),
     );
   },
 );
@@ -61,7 +60,7 @@ void main() async {
       connection.listen(
         (event) async {
           print(utf8.decode(event.data));
-          connection.send(Uint8List.fromList(utf8.encode('Bye World')));
+          connection.send(utf8.encode('Bye World'));
           await connection.close();
         },
         onDone: () async {
@@ -100,5 +99,5 @@ void main() async {
         print('Client closed.');
       },
     )
-    ..send(Uint8List.fromList(utf8.encode('Hello World')));
+    ..send(utf8.encode('Hello World'));
 }
