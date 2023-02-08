@@ -21,7 +21,7 @@ import 'util.dart';
 
 /// Callback signature for retrieving Pre-Shared Keys from a [DtlsServer]'s
 /// keystore.
-typedef PskKeyStoreCallback = Uint8List? Function(Uint8List identity);
+typedef PskKeyStoreCallback = Iterable<int>? Function(List<int> identity);
 
 /// Provides DTLS server functionality based on OpenSSL.
 ///
@@ -510,7 +510,7 @@ int _pskCallback(Pointer<SSL> ssl, Pointer<Char> identity,
     return -1;
   }
 
-  final pskLength = pskCredentials.lengthInBytes;
+  final pskLength = pskCredentials.length;
 
   psk.cast<Uint8>().asTypedList(pskLength).setAll(0, pskCredentials);
   return pskLength;

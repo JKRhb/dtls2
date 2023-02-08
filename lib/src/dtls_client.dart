@@ -340,20 +340,20 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     final connectionIdentity = pskCredentials.identity;
     final connectionPsk = pskCredentials.preSharedKey;
 
-    if (connectionIdentity.lengthInBytes > maxIdentityLength ||
-        connectionPsk.lengthInBytes > maxPskLength) {
+    if (connectionIdentity.length > maxIdentityLength ||
+        connectionPsk.length > maxPskLength) {
       return _pskErrorCode;
     }
 
     identity
         .cast<Uint8>()
-        .asTypedList(connectionIdentity.lengthInBytes)
+        .asTypedList(connectionIdentity.length)
         .setAll(0, connectionIdentity);
     psk
         .cast<Uint8>()
-        .asTypedList(connectionPsk.lengthInBytes)
+        .asTypedList(connectionPsk.length)
         .setAll(0, connectionPsk);
-    return connectionPsk.lengthInBytes;
+    return connectionPsk.length;
   }
 
   void _handleAlert(DtlsAlert event) {

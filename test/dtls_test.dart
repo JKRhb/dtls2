@@ -21,7 +21,7 @@ final serverKeyStore = {identity: preSharedKey};
 
 final bindAddress = InternetAddress.anyIPv4;
 
-Uint8List? _serverPskCallback(Uint8List identity) {
+Iterable<int>? _serverPskCallback(Iterable<int> identity) {
   final identityString = utf8.decode(identity.toList());
 
   final psk = serverKeyStore[identityString];
@@ -30,7 +30,7 @@ Uint8List? _serverPskCallback(Uint8List identity) {
     return null;
   }
 
-  return Uint8List.fromList(utf8.encode(psk));
+  return utf8.encode(psk);
 }
 
 final clientContext = DtlsClientContext(
