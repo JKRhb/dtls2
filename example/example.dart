@@ -34,6 +34,7 @@ final context = DtlsClientContext(
   withTrustedRoots: true,
   ciphers: _ciphers,
   pskCredentialsCallback: (identityHint) {
+    print(identityHint);
     return PskCredentials(
       identity: Uint8List.fromList(utf8.encode(_identity)),
       preSharedKey: Uint8List.fromList(utf8.encode(_preSharedKey)),
@@ -52,6 +53,7 @@ void main() async {
       DtlsServerContext(
         pskKeyStoreCallback: _serverPskCallback,
         ciphers: _ciphers,
+        identityHint: "This is the identity hint!",
       ));
 
   dtlsServer.listen(

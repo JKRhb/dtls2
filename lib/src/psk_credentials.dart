@@ -9,7 +9,7 @@ import 'dart:typed_data';
 /// Servers might provide an [identityHint] that contains information on how
 /// to generate the credentials.
 typedef PskCredentialsCallback = PskCredentials Function(
-  Uint8List identityHint,
+  String? identityHint,
 );
 
 /// Credentials used for PSK Cipher Suites consisting of an [identity]
