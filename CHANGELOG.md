@@ -1,3 +1,8 @@
+## 0.12.0
+
+- feat!: simplify identity hint determination
+- feat!: do not use typed_data types for external APIs
+
 ## 0.11.0
 
 - fix(dtls_client): throw exception if no ciphers are available
