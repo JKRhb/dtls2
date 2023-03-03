@@ -69,7 +69,27 @@ OpenSsl _loadLibCrypto() {
 }
 
 /// The global libssl object.
-final libSsl = _loadLibSsl();
+final _libSsl = _loadLibSsl();
 
 /// The global libcrypto object.
-final libCrypto = _loadLibCrypto();
+final _libCrypto = _loadLibCrypto();
+
+OpenSsl _loadOpenSsl(DynamicLibrary? dynamicLibrary, OpenSsl defaultLibrary) {
+  if (dynamicLibrary == null) {
+    return defaultLibrary;
+  }
+
+  return OpenSsl(dynamicLibrary);
+}
+
+/// Tries to load libcrypto from a [dynamicLibrary].
+///
+/// If that fails, the function tries to load libcrypto from a default location.
+OpenSsl loadLibCrypto(final DynamicLibrary? dynamicLibrary) =>
+    _loadOpenSsl(dynamicLibrary, _libCrypto);
+
+/// Tries to load libssl from a [dynamicLibrary].
+///
+/// If that fails, the function tries to load libssl from a default location.
+OpenSsl loadLibSsl(final DynamicLibrary? dynamicLibrary) =>
+    _loadOpenSsl(dynamicLibrary, _libSsl);
