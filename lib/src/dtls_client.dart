@@ -52,8 +52,8 @@ class DtlsClient {
     this._socket, {
     DynamicLibrary? libSsl,
     DynamicLibrary? libCrypto,
-  })  : _libSsl = _loadOpenSsl(libSsl) ?? lib.libSsl,
-        _libCrypto = _loadOpenSsl(libCrypto) ?? lib.libCrypto {
+  })  : _libCrypto = _loadOpenSsl(libCrypto) ?? lib.libCrypto,
+        _libSsl = _loadOpenSsl(libSsl) ?? lib.libSsl {
     _startListening();
   }
 
