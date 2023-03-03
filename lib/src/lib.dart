@@ -65,7 +65,7 @@ OpenSsl _loadLibCrypto() {
     libNames = const ['libcrypto.so'];
   }
 
-  return _loadLibrary(libNames, 'libssl');
+  return _loadLibrary(libNames, 'libcrypto');
 }
 
 /// The global libssl object.
