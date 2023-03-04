@@ -1,3 +1,7 @@
+## 0.13.0
+
+- feat!: rework library loading
+
 ## 0.12.1
 
 - fix: use correct name for libcrypto load exception
