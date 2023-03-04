@@ -1,3 +1,8 @@
+## 0.12.1
+
+- fix: use correct name for libcrypto load exception
+- fix(dtls_client): switch loading order of libcrypto and libssl
+
 ## 0.12.0
 
 - feat!: simplify identity hint determination
