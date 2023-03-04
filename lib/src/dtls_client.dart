@@ -91,6 +91,7 @@ class DtlsClient {
         case RawSocketEvent.read:
           final data = _socket.receive();
           if (data != null) {
+            print("Client receive: $data");
             final key = getConnectionKey(data.address, data.port);
             final connection = _connectionCache[key];
 
@@ -478,7 +479,9 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   void _maintainOutgoing() {
     final ret = _libCrypto.BIO_read(_wbio, buffer.cast(), bufferSize);
     if (ret > 0) {
-      _dtlsClient._socket.send(buffer.asTypedList(ret), _address, _port);
+      final data = buffer.asTypedList(ret);
+      print("Client send: $data");
+      _dtlsClient._socket.send(data, _address, _port);
     }
     _timer?.cancel();
     if (_libSsl.SSL_ctrl(_ssl, DTLS_CTRL_GET_TIMEOUT, 0, buffer.cast()) > 0) {
