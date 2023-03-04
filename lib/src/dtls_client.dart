@@ -15,7 +15,7 @@ import 'buffer.dart';
 import 'dtls_alert.dart';
 import 'dtls_exception.dart';
 import 'generated/ffi.dart';
-import 'lib.dart' as lib;
+import 'lib.dart';
 import 'psk_credentials.dart';
 import 'util.dart';
 
@@ -52,8 +52,8 @@ class DtlsClient {
     this._socket, {
     DynamicLibrary? libSsl,
     DynamicLibrary? libCrypto,
-  })  : _libCrypto = _loadOpenSsl(libCrypto) ?? lib.libCrypto,
-        _libSsl = _loadOpenSsl(libSsl) ?? lib.libSsl {
+  })  : _libCrypto = loadLibCrypto(libCrypto),
+        _libSsl = loadLibSsl(libSsl) {
     _startListening();
   }
 
@@ -126,14 +126,6 @@ class DtlsClient {
   final OpenSsl _libSsl;
 
   final OpenSsl _libCrypto;
-
-  static OpenSsl? _loadOpenSsl(DynamicLibrary? dynamicLibrary) {
-    if (dynamicLibrary == null) {
-      return null;
-    }
-
-    return OpenSsl(dynamicLibrary);
-  }
 
   /// Closes this [DtlsClient].
   ///

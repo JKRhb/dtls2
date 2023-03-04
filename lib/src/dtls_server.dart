@@ -16,7 +16,7 @@ import 'dtls_alert.dart';
 import 'dtls_connection.dart';
 import 'dtls_exception.dart';
 import 'generated/ffi.dart';
-import 'lib.dart' as lib;
+import 'lib.dart';
 import 'util.dart';
 
 /// Callback signature for retrieving Pre-Shared Keys from a [DtlsServer]'s
@@ -33,11 +33,11 @@ class DtlsServer extends Stream<DtlsConnection> {
   DtlsServer(
     this._socket,
     this._context, {
-    OpenSsl? libSsl,
-    OpenSsl? libCrypto,
-  })  : _sslContext = _context._generateSslContext(libSsl ?? lib.libSsl),
-        _libCrypto = libCrypto ?? lib.libCrypto,
-        _libSsl = libSsl ?? lib.libSsl {
+    DynamicLibrary? libSsl,
+    DynamicLibrary? libCrypto,
+  })  : _sslContext = _context._generateSslContext(loadLibSsl(libSsl)),
+        _libCrypto = loadLibCrypto(libCrypto),
+        _libSsl = loadLibSsl(libSsl) {
     const error = -1;
 
     _libSsl
@@ -88,8 +88,8 @@ class DtlsServer extends Stream<DtlsConnection> {
     int port,
     DtlsServerContext context, {
     int ttl = 1,
-    OpenSsl? libCrypto,
-    OpenSsl? libSsl,
+    DynamicLibrary? libCrypto,
+    DynamicLibrary? libSsl,
   }) async {
     final socket = await RawDatagramSocket.bind(host, port, ttl: ttl);
     return DtlsServer(
