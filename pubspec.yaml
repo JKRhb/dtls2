@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 name: dtls2
-description: DTLS provides datagram socket encryption. Implemented using OpenSSL over FFI.
+description: A DTLS library for Dart, implemented via FFI bindings to OpenSSL.
 version: 0.13.0
 repository: https://github.com/JKRhb/dtls2
 
