@@ -1,3 +1,7 @@
+## 0.13.1
+
+- docs: add library documentation
+
 ## 0.13.0
 
 - feat!: rework library loading
