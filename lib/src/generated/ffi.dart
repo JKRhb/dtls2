@@ -22,6 +22,50 @@ class OpenSsl {
           lookup)
       : _lookup = lookup;
 
+  int OPENSSL_version_major() {
+    return _OPENSSL_version_major();
+  }
+
+  late final _OPENSSL_version_majorPtr =
+      _lookup<ffi.NativeFunction<ffi.UnsignedInt Function()>>(
+          'OPENSSL_version_major');
+  late final _OPENSSL_version_major =
+      _OPENSSL_version_majorPtr.asFunction<int Function()>();
+
+  int OPENSSL_version_minor() {
+    return _OPENSSL_version_minor();
+  }
+
+  late final _OPENSSL_version_minorPtr =
+      _lookup<ffi.NativeFunction<ffi.UnsignedInt Function()>>(
+          'OPENSSL_version_minor');
+  late final _OPENSSL_version_minor =
+      _OPENSSL_version_minorPtr.asFunction<int Function()>();
+
+  int OPENSSL_version_patch() {
+    return _OPENSSL_version_patch();
+  }
+
+  late final _OPENSSL_version_patchPtr =
+      _lookup<ffi.NativeFunction<ffi.UnsignedInt Function()>>(
+          'OPENSSL_version_patch');
+  late final _OPENSSL_version_patch =
+      _OPENSSL_version_patchPtr.asFunction<int Function()>();
+
+  ffi.Pointer<ffi.Char> OpenSSL_version(
+    int type,
+  ) {
+    return _OpenSSL_version(
+      type,
+    );
+  }
+
+  late final _OpenSSL_versionPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Int)>>(
+          'OpenSSL_version');
+  late final _OpenSSL_version =
+      _OpenSSL_versionPtr.asFunction<ffi.Pointer<ffi.Char> Function(int)>();
+
   ffi.Pointer<BIO> BIO_new(
     ffi.Pointer<BIO_METHOD> type,
   ) {

@@ -78,6 +78,9 @@ ffigen:
       - SSL_CTX_set_psk_server_callback
       - SSL_CTX_use_psk_identity_hint
       - SSL_set_accept_state
+      - OPENSSL_version_major
+      - OPENSSL_version_minor
+      - OPENSSL_version_patch
   macros:
     include:
       - BIO_C_SET_BUF_MEM_EOF_RETURN
