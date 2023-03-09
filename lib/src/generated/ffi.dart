@@ -52,20 +52,6 @@ class OpenSsl {
   late final _OPENSSL_version_patch =
       _OPENSSL_version_patchPtr.asFunction<int Function()>();
 
-  ffi.Pointer<ffi.Char> OpenSSL_version(
-    int type,
-  ) {
-    return _OpenSSL_version(
-      type,
-    );
-  }
-
-  late final _OpenSSL_versionPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Int)>>(
-          'OpenSSL_version');
-  late final _OpenSSL_version =
-      _OpenSSL_versionPtr.asFunction<ffi.Pointer<ffi.Char> Function(int)>();
-
   ffi.Pointer<BIO> BIO_new(
     ffi.Pointer<BIO_METHOD> type,
   ) {
