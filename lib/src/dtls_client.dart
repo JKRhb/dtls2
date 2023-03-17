@@ -392,13 +392,20 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   void _connectToPeer() {
     final ret = _libSsl.SSL_connect(_ssl);
-    _maintainOutgoing();
+    final res = _maintainOutgoing();
+
     if (ret == 1) {
       _connected = true;
       _connectCompleter.complete(this);
     } else if (ret == 0) {
       _connectCompleter.completeError(DtlsException('handshake shut down'));
     } else {
+      if (res == 0) {
+        _connectCompleter
+            .completeError(SocketException('Network is unreachable'));
+        return;
+      }
+
       _handleError(ret, _connectCompleter.completeError);
     }
   }
@@ -475,15 +482,23 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     _maintainState();
   }
 
-  void _maintainOutgoing() {
+  int _maintainOutgoing() {
     final ret = _libCrypto.BIO_read(_wbio, buffer.cast(), bufferSize);
+    final int bytesSent;
+
     if (ret > 0) {
-      _dtlsClient._socket.send(buffer.asTypedList(ret), _address, _port);
+      bytesSent =
+          _dtlsClient._socket.send(buffer.asTypedList(ret), _address, _port);
+    } else {
+      bytesSent = -1;
     }
+
     _timer?.cancel();
     if (_libSsl.SSL_ctrl(_ssl, DTLS_CTRL_GET_TIMEOUT, 0, buffer.cast()) > 0) {
       _timer = Timer(buffer.cast<timeval>().ref.duration, _maintainState);
     }
+
+    return bytesSent;
   }
 
   void _maintainState() {
