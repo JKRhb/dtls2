@@ -185,12 +185,8 @@ class DtlsServer extends Stream<DtlsConnection> {
       return;
     }
 
-    for (final connection in _connectionCache.values) {
-      _connections.remove(connection._ssl.address);
-      await connection.close(closedByServer: true);
-    }
+    await _connectionCache.closeConnections();
 
-    _connectionCache.clear();
     if (!_externalSocket || closeExternalSocket) {
       _socket.close();
     }
@@ -312,19 +308,16 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   @override
-  Future<void> close({bool closedByServer = false}) async {
+  Future<void> close() async {
     if (_closed) {
       return;
     }
 
     _timer?.cancel();
 
-    if (!closedByServer) {
-      // This distinction is made to avoid concurrent modification errors.
-      DtlsServer._connections.remove(_ssl.address);
-      final connectionCacheKey = getConnectionKey(_address, _port);
-      _dtlsServer._connectionCache.remove(connectionCacheKey);
-    }
+    DtlsServer._connections.remove(_ssl.address);
+    final connectionCacheKey = getConnectionKey(_address, _port);
+    _dtlsServer._connectionCache.remove(connectionCacheKey);
 
     final connected = _connected;
 
