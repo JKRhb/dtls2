@@ -1,3 +1,7 @@
+## 0.13.2
+
+- fix(client): handle unreachable network
+
 ## 0.13.1
 
 - docs: add library documentation
