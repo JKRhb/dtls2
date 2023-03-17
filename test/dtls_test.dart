@@ -87,6 +87,16 @@ void main() {
         clientContext,
       );
 
+      final secondConnection = await dtlsClient.connect(
+        InternetAddress(address),
+        port,
+        clientContext,
+      );
+
+      expect(connection == secondConnection, isTrue);
+
+      expect(connection.connected, isTrue);
+
       connection
         ..listen(
           (datagram) async {
