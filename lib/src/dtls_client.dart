@@ -136,12 +136,8 @@ class DtlsClient {
       return;
     }
 
-    for (final connection in _connectionCache.values) {
-      _connections.remove(connection._ssl.address);
-      await connection.close(closedByClient: true);
-    }
+    await _connectionCache.closeConnections();
 
-    _connectionCache.clear();
     if (!_externalSocket || closeExternalSocket) {
       _socket.close();
     }
@@ -290,7 +286,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     final ciphersPointer = _libSsl.SSL_get1_supported_ciphers(_ssl);
 
     if (ciphersPointer == nullptr) {
-      await close(closedByClient: true);
+      await close();
       throw DtlsException(
         "No ciphers available. "
         "If you are using PSK cipher suites, check you have defined a "
@@ -444,19 +440,16 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   /// After the connection is closed, trying to send will throw a
   /// [DtlsException].
   @override
-  Future<void> close({bool closedByClient = false}) async {
+  Future<void> close() async {
     if (_closed) {
       return;
     }
 
     _timer?.cancel();
 
-    if (!closedByClient) {
-      // This distinction is made to avoid concurrent modification errors.
-      DtlsClient._connections.remove(_ssl.address);
-      final connectionCacheKey = getConnectionKey(_address, _port);
-      _dtlsClient._connectionCache.remove(connectionCacheKey);
-    }
+    DtlsClient._connections.remove(_ssl.address);
+    final connectionCacheKey = getConnectionKey(_address, _port);
+    _dtlsClient._connectionCache.remove(connectionCacheKey);
 
     final connected = _connected;
 
