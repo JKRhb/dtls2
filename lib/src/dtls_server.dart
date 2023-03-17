@@ -341,6 +341,7 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
     }
 
     _connected = false;
+    _closed = true;
 
     _timer?.cancel();
 
@@ -352,7 +353,6 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
     _libSsl.SSL_free(_ssl);
     _libCrypto.BIO_ADDR_free(_bioAddr);
 
-    _closed = true;
     await _received.close();
   }
 
