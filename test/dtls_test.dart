@@ -109,6 +109,8 @@ void main() {
       await completer.future;
       await dtlsServer.close();
       await dtlsClient.close();
+
+      expect(connection.connected, isFalse);
     },
     onPlatform: <String, dynamic>{
       "mac-os": [
