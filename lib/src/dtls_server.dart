@@ -117,8 +117,6 @@ class DtlsServer extends Stream<DtlsConnection> {
         }
 
         final ssl = _libSsl.SSL_new(_sslContext);
-        // _libSsl.SSL_set_options(ssl, SSL_OP_COOKIE_EXCHANGE);
-
         connection = _DtlsServerConnection(
           this,
           address,
@@ -262,9 +260,6 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   void _maintainState() {
-    // SSL_CTX_set_options(ctx, SSL_OP_NO_QUERY_MTU);
-    // DTLS_set_link_mtu(this->handle, mtu)
-
     if (_connectCompleter.isCompleted) {
       final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
       if (ret > 0) {
