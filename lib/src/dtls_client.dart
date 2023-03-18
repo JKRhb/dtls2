@@ -506,6 +506,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
 
     _connected = false;
+    _closed = true;
 
     _timer?.cancel();
 
@@ -514,8 +515,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     _libSsl.SSL_shutdown(_ssl);
     _maintainState();
     _freeResources();
-
-    _closed = true;
 
     await _received.close();
   }
