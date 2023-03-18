@@ -91,8 +91,7 @@ class DtlsClient {
         case RawSocketEvent.read:
           final data = _socket.receive();
           if (data != null) {
-            final key = getConnectionKey(data.address, data.port);
-            final connection = _connectionCache[key];
+            final connection = _retrieveConnection(data.address, data.port);
 
             if (connection != null) {
               connection._incoming(data.data);
@@ -162,15 +161,13 @@ class DtlsClient {
     String? hostname,
     Duration? timeout,
   }) async {
-    final key = getConnectionKey(address, port);
-
-    final existingConnection = _connectionCache[key];
+    final existingConnection = _retrieveConnection(address, port);
 
     if (existingConnection != null && !existingConnection._closed) {
       return existingConnection;
     }
 
-    final connection = _DtlsClientConnection(
+    return _DtlsClientConnection._connect(
       this,
       hostname,
       address,
@@ -179,13 +176,8 @@ class DtlsClient {
       context._pskCredentialsCallback,
       _libCrypto,
       _libSsl,
+      timeout: timeout,
     );
-    await connection._checkSslCiphers();
-
-    _connectionCache[key] = connection;
-    DtlsClient._connections[connection._ssl.address] = connection;
-
-    return connection._connect(timeout: timeout);
   }
 
   int _send(_DtlsClientConnection dtlsClientConnection, List<int> data) {
@@ -197,6 +189,33 @@ class DtlsClient {
       dtlsClientConnection._handleError(ret, (e) => throw e);
     }
     return ret;
+  }
+
+  _DtlsClientConnection? _retrieveConnection(
+    InternetAddress address,
+    int port,
+  ) {
+    final key = getConnectionKey(address, port);
+    return _connectionCache[key];
+  }
+
+  void _saveConnection(
+    _DtlsClientConnection connection,
+    InternetAddress address,
+    int port,
+  ) {
+    final key = getConnectionKey(address, port);
+    _connectionCache[key] = connection;
+    DtlsClient._connections[connection._ssl.address] = connection;
+  }
+
+  void _removeConnection(InternetAddress address, int port) {
+    final key = getConnectionKey(address, port);
+    final removedConnection = _connectionCache.remove(key);
+
+    if (removedConnection != null) {
+      DtlsClient._connections.remove(removedConnection._ssl.address);
+    }
   }
 }
 
@@ -213,38 +232,59 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     this._pskCredentialsCallback,
     this._libCrypto,
     this._libSsl,
+    this._connectCompleter,
   )   : _ssl = _libSsl.SSL_new(sslContext),
         _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
         _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()) {
-    _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
-    _libCrypto
-      ..BIO_ctrl(_rbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr)
-      ..BIO_ctrl(_wbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr);
+    _setBios();
+    _setInfoCallback(sslContext);
+    _setHostname(hostname);
+    _setPskCallback();
+    _checkSslCiphers();
+    _connectToPeer();
+  }
 
-    if (hostname != null) {
-      final hostnameStr = hostname.toNativeUtf8();
-      _libCrypto.X509_VERIFY_PARAM_set1_host(
-          _libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), hostnameStr.length);
-      _libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
-          TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
-      malloc.free(hostnameStr);
+  static Future<_DtlsClientConnection> _connect(
+    DtlsClient dtlsClient,
+    String? hostname,
+    InternetAddress address,
+    int port,
+    Pointer<SSL_CTX> sslContext,
+    PskCredentialsCallback? pskCredentialsCallback,
+    OpenSsl libCrypto,
+    OpenSsl libSsl, {
+    Duration? timeout,
+  }) {
+    final connectCompleter = Completer<_DtlsClientConnection>();
+    final connection = _DtlsClientConnection(
+      dtlsClient,
+      hostname,
+      address,
+      port,
+      sslContext,
+      pskCredentialsCallback,
+      libCrypto,
+      libSsl,
+      connectCompleter,
+    );
+
+    dtlsClient._saveConnection(connection, address, port);
+
+    final future = connectCompleter.future;
+
+    if (timeout != null) {
+      return future.timeout(
+        timeout,
+        onTimeout: () async {
+          connection
+            .._closed = true
+            .._freeResources();
+          throw TimeoutException("Handshake timed out.");
+        },
+      );
     }
 
-    _libSsl
-      ..SSL_CTX_set_info_callback(
-        sslContext,
-        Pointer.fromFunction(_infoCallback),
-      )
-      ..SSL_CTX_free(sslContext);
-
-    if (_pskCredentialsCallback == null) {
-      return;
-    }
-
-    final Pointer<NativeFunction<_PskCallbackFunction>> callback =
-        Pointer.fromFunction(_pskCallback, _pskErrorCode);
-
-    _libSsl.SSL_set_psk_client_callback(_ssl, callback);
+    return future;
   }
 
   bool _closed = false;
@@ -255,7 +295,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   final int _port;
 
-  final Completer<_DtlsClientConnection> _connectCompleter = Completer();
+  final Completer<_DtlsClientConnection> _connectCompleter;
 
   final Pointer<BIO> _rbio;
 
@@ -276,17 +316,57 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   final OpenSsl _libCrypto;
 
+  void _setBios() {
+    _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
+    _libCrypto
+      ..BIO_ctrl(_rbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr)
+      ..BIO_ctrl(_wbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr);
+  }
+
+  void _setInfoCallback(Pointer<SSL_CTX> sslContext) {
+    _libSsl
+      ..SSL_CTX_set_info_callback(
+        sslContext,
+        Pointer.fromFunction(_infoCallback),
+      )
+      ..SSL_CTX_free(sslContext);
+  }
+
+  void _setPskCallback() {
+    if (_pskCredentialsCallback == null) {
+      return;
+    }
+
+    final Pointer<NativeFunction<_PskCallbackFunction>> callback =
+        Pointer.fromFunction(_pskCallback, _pskErrorCode);
+
+    _libSsl.SSL_set_psk_client_callback(_ssl, callback);
+  }
+
+  void _setHostname(String? hostname) {
+    if (hostname == null) {
+      return;
+    }
+
+    final hostnameStr = hostname.toNativeUtf8();
+    _libCrypto.X509_VERIFY_PARAM_set1_host(
+        _libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), hostnameStr.length);
+    _libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
+        TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
+    malloc.free(hostnameStr);
+  }
+
   /// Throws a [DtlsException] if no ciphers are available for this connection
   /// attempt.
   ///
   /// If this is the case, the allocated resources are cleaned up by calling the
-  /// [close] method.
-  Future<void> _checkSslCiphers() async {
-    // TODO(JKRhb): Could this method get called from a constructor?
+  /// [_freeResources] method.
+  void _checkSslCiphers() {
     final ciphersPointer = _libSsl.SSL_get1_supported_ciphers(_ssl);
 
     if (ciphersPointer == nullptr) {
-      await close();
+      _closed = true;
+      _freeResources();
       throw DtlsException(
         "No ciphers available. "
         "If you are using PSK cipher suites, check you have defined a "
@@ -406,26 +486,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
   }
 
-  Future<_DtlsClientConnection> _connect({Duration? timeout}) {
-    if (!_connectCompleter.isCompleted) {
-      _connectToPeer();
-    }
-
-    final future = _connectCompleter.future;
-
-    if (timeout != null) {
-      return future.timeout(
-        timeout,
-        onTimeout: () async {
-          await close();
-          throw TimeoutException("Handshake timed out.");
-        },
-      );
-    }
-
-    return future;
-  }
-
   @override
   int send(List<int> data) {
     if (!_connected) {
@@ -445,28 +505,23 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       return;
     }
 
-    _timer?.cancel();
-
-    DtlsClient._connections.remove(_ssl.address);
-    final connectionCacheKey = getConnectionKey(_address, _port);
-    _dtlsClient._connectionCache.remove(connectionCacheKey);
-
-    final connected = _connected;
-
-    if (connected) {
-      _connected = false;
-      _libSsl.SSL_shutdown(_ssl);
-      _maintainState();
-    }
-
-    _libSsl.SSL_free(_ssl);
-
-    _closed = true;
     _connected = false;
 
-    if (connected) {
-      await _received.close();
-    }
+    _timer?.cancel();
+
+    _dtlsClient._removeConnection(_address, _port);
+
+    _libSsl.SSL_shutdown(_ssl);
+    _maintainState();
+    _freeResources();
+
+    _closed = true;
+
+    await _received.close();
+  }
+
+  void _freeResources() {
+    _libSsl.SSL_free(_ssl);
   }
 
   void _incoming(Uint8List input) {
