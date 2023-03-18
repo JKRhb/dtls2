@@ -1,3 +1,12 @@
+## 0.13.3
+
+- ci: simplify code coverage generation
+- refactor: refactor connection closing mechanism
+- refactor: refactor client connection setup
+- test: increase test coverage
+- refactor: refactor DTLS server implementation
+- fix: don't close client or server connection twice during alert handling
+
 ## 0.13.2
 
 - fix(client): handle unreachable network
