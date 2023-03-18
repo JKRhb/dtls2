@@ -38,18 +38,7 @@ class DtlsServer extends Stream<DtlsConnection> {
   })  : _sslContext = _context._generateSslContext(loadLibSsl(libSsl)),
         _libCrypto = loadLibCrypto(libCrypto),
         _libSsl = loadLibSsl(libSsl) {
-    const error = -1;
-
-    _libSsl
-      ..SSL_CTX_set_cookie_generate_cb(
-          _sslContext, Pointer.fromFunction(_dtlsCookieGenerateCallback, error))
-      ..SSL_CTX_set_cookie_verify_cb(
-          _sslContext, Pointer.fromFunction(_dtlsCookieVerifyCallback, error))
-      ..SSL_CTX_set_info_callback(
-        _sslContext,
-        Pointer.fromFunction(_infoCallback),
-      );
-
+    _setCallbacks();
     _startListening();
   }
 
@@ -102,37 +91,31 @@ class DtlsServer extends Stream<DtlsConnection> {
 
   void _handleSocketRead() {
     final datagram = _socket.receive();
-    if (datagram != null) {
-      final data = datagram.data;
-      final address = datagram.address;
-      final port = datagram.port;
-      final connectionKey = getConnectionKey(address, port);
-
-      var connection = _connectionCache[connectionKey];
-
-      if (connection == null) {
-        // TODO(JKRhb): Check if there is a better way to assert this.
-        if (!data.isValidClientHello()) {
-          return;
-        }
-
-        final ssl = _libSsl.SSL_new(_sslContext);
-        connection = _DtlsServerConnection(
-          this,
-          address,
-          port,
-          _context,
-          ssl,
-          _libCrypto,
-          _libSsl,
-        );
-
-        _connectionCache[connectionKey] = connection;
-        _connections[ssl.address] = connection;
-      }
-
-      connection._incoming(data);
+    if (datagram == null) {
+      return;
     }
+
+    final connection = _retrieveConnection(datagram.address, datagram.port) ??
+        _establishConnection(datagram);
+
+    connection?._incoming(datagram.data);
+  }
+
+  _DtlsServerConnection? _establishConnection(Datagram datagram) {
+    // TODO(JKRhb): Check if there is a better way to assert this.
+    if (!datagram.data.isValidClientHello()) {
+      return null;
+    }
+
+    return _DtlsServerConnection(
+      this,
+      datagram.address,
+      datagram.port,
+      _context,
+      _sslContext,
+      _libCrypto,
+      _libSsl,
+    );
   }
 
   void _startListening() {
@@ -196,6 +179,47 @@ class DtlsServer extends Stream<DtlsConnection> {
     await _connectionStream.close();
     _closed = true;
   }
+
+  void _setCallbacks() {
+    const error = -1;
+
+    _libSsl
+      ..SSL_CTX_set_cookie_generate_cb(
+          _sslContext, Pointer.fromFunction(_dtlsCookieGenerateCallback, error))
+      ..SSL_CTX_set_cookie_verify_cb(
+          _sslContext, Pointer.fromFunction(_dtlsCookieVerifyCallback, error))
+      ..SSL_CTX_set_info_callback(
+        _sslContext,
+        Pointer.fromFunction(_infoCallback),
+      );
+  }
+
+  _DtlsServerConnection? _retrieveConnection(
+    InternetAddress address,
+    int port,
+  ) {
+    final key = getConnectionKey(address, port);
+    return _connectionCache[key];
+  }
+
+  void _saveConnection(
+    _DtlsServerConnection connection,
+    InternetAddress address,
+    int port,
+  ) {
+    final key = getConnectionKey(address, port);
+    _connectionCache[key] = connection;
+    DtlsServer._connections[connection._ssl.address] = connection;
+  }
+
+  void _removeConnection(InternetAddress address, int port) {
+    final key = getConnectionKey(address, port);
+    final removedConnection = _connectionCache.remove(key);
+
+    if (removedConnection != null) {
+      DtlsServer._connections.remove(removedConnection._ssl.address);
+    }
+  }
 }
 
 /// This Event is emitted if a [DtlsServer] receives application data.
@@ -206,16 +230,19 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
     this._address,
     this._port,
     DtlsServerContext context,
-    this._ssl,
+    Pointer<SSL_CTX> _sslContext,
     this._libCrypto,
     this._libSsl,
   )   : _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
         _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
-        _bioAddr = _libCrypto.BIO_ADDR_new() {
+        _bioAddr = _libCrypto.BIO_ADDR_new(),
+        _ssl = _libSsl.SSL_new(_sslContext) {
     _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
     _libCrypto
       ..BIO_ctrl(_rbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr)
       ..BIO_ctrl(_wbio, BIO_C_SET_BUF_MEM_EOF_RETURN, -1, nullptr);
+
+    _dtlsServer._saveConnection(this, _address, _port);
   }
 
   final DtlsServer _dtlsServer;
@@ -313,25 +340,19 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
       return;
     }
 
+    _connected = false;
+
     _timer?.cancel();
 
-    DtlsServer._connections.remove(_ssl.address);
-    final connectionCacheKey = getConnectionKey(_address, _port);
-    _dtlsServer._connectionCache.remove(connectionCacheKey);
+    _dtlsServer._removeConnection(_address, _port);
 
-    final connected = _connected;
-
-    if (connected) {
-      _connected = false;
-      _libSsl.SSL_shutdown(_ssl);
-      _maintainState();
-    }
+    _libSsl.SSL_shutdown(_ssl);
+    _maintainState();
 
     _libSsl.SSL_free(_ssl);
     _libCrypto.BIO_ADDR_free(_bioAddr);
 
     _closed = true;
-    _connected = false;
     await _received.close();
   }
 
