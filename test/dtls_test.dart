@@ -15,6 +15,8 @@ const ciphers = "PSK-AES128-CCM8";
 
 const identity = "Client_identity";
 
+const identityHint = "identityHint";
+
 const preSharedKey = "secretPSK";
 
 final serverKeyStore = {identity: preSharedKey};
@@ -37,7 +39,9 @@ final clientContext = DtlsClientContext(
   verify: true,
   withTrustedRoots: true,
   ciphers: ciphers,
-  pskCredentialsCallback: (identityHint) {
+  pskCredentialsCallback: (receivedIdentityHint) {
+    expect(receivedIdentityHint, identityHint);
+
     return PskCredentials(
       identity: Uint8List.fromList(utf8.encode(identity)),
       preSharedKey: Uint8List.fromList(utf8.encode(preSharedKey)),
@@ -48,6 +52,7 @@ final clientContext = DtlsClientContext(
 final serverContext = DtlsServerContext(
   pskKeyStoreCallback: _serverPskCallback,
   ciphers: ciphers,
+  identityHint: identityHint,
 );
 
 void main() {
@@ -87,6 +92,16 @@ void main() {
         clientContext,
       );
 
+      final secondConnection = await dtlsClient.connect(
+        InternetAddress(address),
+        port,
+        clientContext,
+      );
+
+      expect(connection == secondConnection, isTrue);
+
+      expect(connection.connected, isTrue);
+
       connection
         ..listen(
           (datagram) async {
@@ -99,6 +114,8 @@ void main() {
       await completer.future;
       await dtlsServer.close();
       await dtlsClient.close();
+
+      expect(connection.connected, isFalse);
     },
     onPlatform: <String, dynamic>{
       "mac-os": [
