@@ -276,9 +276,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       return future.timeout(
         timeout,
         onTimeout: () async {
-          connection
-            .._closed = true
-            .._freeResources();
+          await connection.close();
           throw TimeoutException("Handshake timed out.");
         },
       );
@@ -360,18 +358,16 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   /// attempt.
   ///
   /// If this is the case, the allocated resources are cleaned up by calling the
-  /// [_freeResources] method.
+  /// [close] method.
   void _checkSslCiphers() {
     final ciphersPointer = _libSsl.SSL_get1_supported_ciphers(_ssl);
 
     if (ciphersPointer == nullptr) {
-      _closed = true;
-      _freeResources();
-      throw DtlsException(
-        "No ciphers available. "
-        "If you are using PSK cipher suites, check you have defined a "
-        "pskCredentialsCallback.",
-      );
+      close().then((_) => throw DtlsException(
+            "No ciphers available. "
+            "If you are using PSK cipher suites, check you have defined a "
+            "pskCredentialsCallback.",
+          ));
     }
   }
 
@@ -505,21 +501,19 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       return;
     }
 
-    _connected = false;
     _closed = true;
 
     _timer?.cancel();
 
     _dtlsClient._removeConnection(_address, _port);
 
-    _libSsl.SSL_shutdown(_ssl);
-    _maintainState();
-    _freeResources();
+    if (_connected) {
+      _libSsl.SSL_shutdown(_ssl);
+      _maintainState();
+      await _received.close();
+    }
 
-    await _received.close();
-  }
-
-  void _freeResources() {
+    _connected = false;
     _libSsl.SSL_free(_ssl);
   }
 

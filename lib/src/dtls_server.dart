@@ -340,20 +340,22 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
       return;
     }
 
-    _connected = false;
     _closed = true;
 
     _timer?.cancel();
 
     _dtlsServer._removeConnection(_address, _port);
 
-    _libSsl.SSL_shutdown(_ssl);
-    _maintainState();
+    if (_connected) {
+      _libSsl.SSL_shutdown(_ssl);
+      _maintainState();
+      await _received.close();
+    }
+
+    _connected = false;
 
     _libSsl.SSL_free(_ssl);
     _libCrypto.BIO_ADDR_free(_bioAddr);
-
-    await _received.close();
   }
 
   @override
