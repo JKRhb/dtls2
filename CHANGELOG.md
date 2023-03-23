@@ -1,3 +1,9 @@
+## 0.13.4
+
+- fix: shutdown connections only when actually connected
+- fix: fix client behavior during connection closing
+- fix: fix server behavior during connection closing
+
 ## 0.13.3
 
 - ci: simplify code coverage generation
