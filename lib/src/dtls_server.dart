@@ -349,13 +349,13 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
     if (_connected) {
       _libSsl.SSL_shutdown(_ssl);
       _maintainState();
+      await _received.close();
     }
+
     _connected = false;
 
     _libSsl.SSL_free(_ssl);
     _libCrypto.BIO_ADDR_free(_bioAddr);
-
-    await _received.close();
   }
 
   @override
