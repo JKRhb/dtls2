@@ -518,7 +518,7 @@ int _pskCallback(Pointer<SSL> ssl, Pointer<Char> identity,
       connection._dtlsServer._context._pskKeyStoreCallback?.call(identityBytes);
 
   if (pskCredentials == null) {
-    return -1;
+    return 0;
   }
 
   final pskLength = pskCredentials.length;
