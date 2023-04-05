@@ -1,8 +1,8 @@
 // Copyright (c) 2023 Jan Romann
 // SPDX-License-Identifier: MIT
 
-import 'dart:io';
-import 'dtls_exception.dart';
+import "dart:io";
+import "package:dtls2/src/dtls_exception.dart";
 
 /// Represents a DTLS connection to a peer.
 ///

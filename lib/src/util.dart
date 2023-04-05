@@ -1,10 +1,10 @@
 // Copyright (c) 2023 Jan Romann
 // SPDX-License-Identifier: MIT
 
-import 'dart:io';
+import "dart:io";
 
-import 'dtls_connection.dart';
-import 'generated/ffi.dart';
+import "package:dtls2/src/dtls_connection.dart";
+import "package:dtls2/src/generated/ffi.dart";
 
 /// Creates a string key from an [address] and [port] intended for caching a
 /// connection.
