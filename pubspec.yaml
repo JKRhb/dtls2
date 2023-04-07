@@ -87,6 +87,7 @@ ffigen:
       - SSL_CTRL_SET_TLSEXT_HOSTNAME
       - SSL_ERROR_SSL
       - SSL_ERROR_ZERO_RETURN
+      - SSL_ERROR_SYSCALL
       - SSL_VERIFY_NONE
       - SSL_VERIFY_PEER
       - TLSEXT_NAMETYPE_host_name
