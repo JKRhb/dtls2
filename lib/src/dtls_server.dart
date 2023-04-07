@@ -19,6 +19,13 @@ import 'generated/ffi.dart';
 import 'lib.dart';
 import 'util.dart';
 
+enum _ServerConnectionState {
+  uninitialized,
+  handshake,
+  connected,
+  shutdown,
+}
+
 /// Callback signature for retrieving Pre-Shared Keys from a [DtlsServer]'s
 /// keystore.
 typedef PskKeyStoreCallback = Iterable<int>? Function(List<int> identity);
@@ -251,8 +258,6 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
   final int _port;
 
-  final Completer<_DtlsServerConnection> _connectCompleter = Completer();
-
   final Pointer<SSL> _ssl;
 
   final Pointer<BIO> _rbio;
@@ -263,10 +268,10 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
   final cookie = _generateCookie();
 
-  bool _connected = false;
+  _ServerConnectionState _state = _ServerConnectionState.uninitialized;
 
   @override
-  bool get connected => _connected;
+  bool get connected => _state == _ServerConnectionState.connected;
 
   bool _closed = false;
 
@@ -283,19 +288,33 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   void _maintainState() {
-    if (_connectCompleter.isCompleted) {
-      final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
-      if (ret > 0) {
-        final data = Uint8List.fromList(buffer.asTypedList(ret));
-        final datagram = Datagram(data, _address, _port);
-        _received.add(datagram);
-        _maintainOutgoing();
-      } else {
-        _maintainOutgoing();
-        _handleError(ret, _received.addError);
-      }
-    } else {
+    if (_state == _ServerConnectionState.uninitialized) {
       _connectToPeer();
+      return;
+    }
+
+    final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
+
+    if (ret > 0) {
+      if (_state == _ServerConnectionState.handshake) {
+        final acceptValue = _libSsl.SSL_accept(_ssl);
+
+        if (acceptValue == 1) {
+          _state = _ServerConnectionState.connected;
+        } else {
+          _state = _ServerConnectionState.shutdown;
+          close();
+          return;
+        }
+      }
+
+      final data = Uint8List.fromList(buffer.asTypedList(ret));
+      final datagram = Datagram(data, _address, _port);
+      _received.add(datagram);
+      _maintainOutgoing();
+    } else {
+      _maintainOutgoing();
+      _handleError(ret);
     }
   }
 
@@ -303,17 +322,12 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
   void _connectToPeer() {
     final ret = _libSsl.DTLSv1_listen(_ssl, _bioAddr);
-
     _maintainOutgoing();
     if (ret == 1) {
-      _connected = true;
-      _connectCompleter.complete(this);
+      _state = _ServerConnectionState.handshake;
       _dtlsServer._connectionStream.add(this);
-    } else if (ret < 0) {
-      _handleError(ret, _connectCompleter.completeError);
-      _connectCompleter.completeError(DtlsException('handshake shut down'));
     } else {
-      _handleError(ret, _connectCompleter.completeError);
+      _handleError(ret);
     }
   }
 
@@ -346,13 +360,14 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
     _dtlsServer._removeConnection(_address, _port);
 
-    if (_connected) {
+    if (_state == _ServerConnectionState.connected) {
+      _state = _ServerConnectionState.shutdown;
       _libSsl.SSL_shutdown(_ssl);
       _maintainState();
       await _received.close();
     }
 
-    _connected = false;
+    _state = _ServerConnectionState.shutdown;
 
     _libSsl.SSL_free(_ssl);
     _libCrypto.BIO_ADDR_free(_bioAddr);
@@ -374,17 +389,17 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
   @override
   int send(List<int> data) {
-    if (!_connected) {
+    if (_state != _ServerConnectionState.connected) {
       throw DtlsException("Sending failed: Not connected!");
     }
 
     return _dtlsServer._send(this, data);
   }
 
-  void _handleError(int ret, void Function(Exception) errorHandler) {
+  void _handleError(int ret, [void Function(Exception)? errorHandler]) {
     final code = _libSsl.SSL_get_error(_ssl, ret);
     if (code == SSL_ERROR_SSL) {
-      errorHandler(DtlsException(
+      errorHandler?.call(DtlsException(
           _libCrypto.ERR_error_string(_libCrypto.ERR_get_error(), nullptr)
               .cast<Utf8>()
               .toDartString()));
@@ -518,7 +533,7 @@ int _pskCallback(Pointer<SSL> ssl, Pointer<Char> identity,
       connection._dtlsServer._context._pskKeyStoreCallback?.call(identityBytes);
 
   if (pskCredentials == null) {
-    return -1;
+    return 0;
   }
 
   final pskLength = pskCredentials.length;
