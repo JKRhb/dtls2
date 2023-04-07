@@ -301,18 +301,19 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   final _received = StreamController<Datagram>();
 
-  bool _connected = false;
-
   final PskCredentialsCallback? _pskCredentialsCallback;
 
   @override
-  bool get connected => _connected;
+  bool get connected => state == ConnectionState.connected;
 
   Timer? _timer;
 
   final OpenSsl _libSsl;
 
   final OpenSsl _libCrypto;
+
+  @override
+  ConnectionState state = ConnectionState.uninitialized;
 
   void _setBios() {
     _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
@@ -463,16 +464,19 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   void _connectToPeer() {
+    state = ConnectionState.handshake;
     final ret = _libSsl.SSL_connect(_ssl);
     final res = _maintainOutgoing();
 
     if (ret == 1) {
-      _connected = true;
+      state = ConnectionState.connected;
       _connectCompleter.complete(this);
     } else if (ret == 0) {
+      state = ConnectionState.shutdown;
       _connectCompleter.completeError(DtlsException('handshake shut down'));
     } else {
       if (res == 0) {
+        state = ConnectionState.shutdown;
         _connectCompleter
             .completeError(SocketException('Network is unreachable'));
         return;
@@ -484,7 +488,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   @override
   int send(List<int> data) {
-    if (!_connected) {
+    if (!connected) {
       throw DtlsException("Sending failed: Not connected!");
     }
 
@@ -507,13 +511,13 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
     _dtlsClient._removeConnection(_address, _port);
 
-    if (_connected) {
+    if (connected) {
       _libSsl.SSL_shutdown(_ssl);
       _maintainState();
       await _received.close();
     }
 
-    _connected = false;
+    state = ConnectionState.shutdown;
     _libSsl.SSL_free(_ssl);
   }
 
