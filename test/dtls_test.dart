@@ -116,13 +116,6 @@ void main() {
 
       expect(connection.connected, isFalse);
     },
-    onPlatform: <String, dynamic>{
-      "mac-os": [
-        const Skip(
-          "on macOS, SSL_connct somehow fails. This needs to be fixed.",
-        ),
-      ]
-    },
   );
 
   test("Parse DTLS alerts", () {
@@ -137,4 +130,40 @@ void main() {
       "DtlsEvent with Alert Level 'Warning' and description 'close_notify'.",
     );
   });
+
+  // TODO(JKRhb): Remove once issus with DTLS server on macOS have been resolved
+  // test(
+  //   "Client test with external server",
+  //   () async {
+  //     final completer = Completer<void>();
+  //     const port = 5684;
+
+  //     final dtlsClient = await DtlsClient.bind(bindAddress, 0);
+
+  //     const clientPayload = "Hello World";
+
+  //     final address = (await InternetAddress.lookup(
+  //       "californium.eclipseprojects.io",
+  //       type: InternetAddressType.IPv4,
+  //     ))[0];
+
+  //     final connection = await dtlsClient.connect(
+  //       address,
+  //       port,
+  //       clientContext,
+  //     );
+
+  //     connection
+  //       ..listen(
+  //         (datagram) async {
+  //           expect(datagram.data, [112, 0, 108, 108]);
+  //           completer.complete();
+  //         },
+  //       )
+  //       ..send(Uint8List.fromList(utf8.encode(clientPayload)));
+
+  //     await completer.future;
+  //     await dtlsClient.close();
+  //   },
+  // );
 }
