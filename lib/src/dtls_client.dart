@@ -2,6 +2,8 @@
 // Copyright (c) 2021 Famedly GmbH
 // SPDX-License-Identifier: MIT
 
+// ignore_for_file: avoid_print
+
 import "dart:async";
 import "dart:ffi";
 import "dart:io";
