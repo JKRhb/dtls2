@@ -1,6 +1,7 @@
 [![pub package](https://img.shields.io/pub/v/dtls2.svg)](https://pub.dev/packages/dtls2)
 [![Build](https://github.com/JKRhb/dtls2/actions/workflows/ci.yml/badge.svg)](https://github.com/JKRhb/dtls2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/JKRhb/dtls2/branch/main/graph/badge.svg?token=76OBNOVL60)](https://codecov.io/gh/JKRhb/dtls2)
+[![style: lint](https://img.shields.io/badge/style-lint-4BC0F5.svg)](https://pub.dev/packages/lint)
 
 # dtls2
 

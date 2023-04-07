@@ -2,33 +2,23 @@
 // Copyright (c) 2021 Famedly GmbH
 // SPDX-License-Identifier: MIT
 
-import 'dart:async';
-import 'dart:ffi';
-import 'dart:io';
-import 'dart:math';
-import 'dart:typed_data';
+import "dart:async";
+import "dart:ffi";
+import "dart:io";
+import "dart:math";
+import "dart:typed_data";
 
-import 'package:dtls2/src/dtls_connection.dart';
-import 'package:ffi/ffi.dart';
-
-import 'buffer.dart';
-import 'dtls_alert.dart';
-import 'dtls_exception.dart';
-import 'generated/ffi.dart';
-import 'lib.dart';
-import 'psk_credentials.dart';
-import 'util.dart';
+import "package:dtls2/src/buffer.dart";
+import "package:dtls2/src/dtls_alert.dart";
+import "package:dtls2/src/dtls_connection.dart";
+import "package:dtls2/src/dtls_exception.dart";
+import "package:dtls2/src/generated/ffi.dart";
+import "package:dtls2/src/lib.dart";
+import "package:dtls2/src/psk_credentials.dart";
+import "package:dtls2/src/util.dart";
+import "package:ffi/ffi.dart";
 
 const _pskErrorCode = 0;
-
-typedef _PskCallbackFunction = UnsignedInt Function(
-  Pointer<SSL>,
-  Pointer<Char>,
-  Pointer<Char>,
-  UnsignedInt,
-  Pointer<UnsignedChar>,
-  UnsignedInt,
-);
 
 /// Client for connecting to DTLS Servers and sending UDP packets with encrpyted
 /// payloads afterwards.
@@ -183,7 +173,10 @@ class DtlsClient {
   int _send(_DtlsClientConnection dtlsClientConnection, List<int> data) {
     buffer.asTypedList(bufferSize).setAll(0, data);
     final ret = _libSsl.SSL_write(
-        dtlsClientConnection._ssl, buffer.cast(), data.length);
+      dtlsClientConnection._ssl,
+      buffer.cast(),
+      data.length,
+    );
     dtlsClientConnection._maintainOutgoing();
     if (ret < 0) {
       dtlsClientConnection._handleError(ret, (e) => throw e);
@@ -336,8 +329,15 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       return;
     }
 
-    final Pointer<NativeFunction<_PskCallbackFunction>> callback =
-        Pointer.fromFunction(_pskCallback, _pskErrorCode);
+    final callback = Pointer.fromFunction<
+        UnsignedInt Function(
+      Pointer<SSL>,
+      Pointer<Char>,
+      Pointer<Char>,
+      UnsignedInt,
+      Pointer<UnsignedChar>,
+      UnsignedInt,
+    )>(_pskCallback, _pskErrorCode);
 
     _libSsl.SSL_set_psk_client_callback(_ssl, callback);
   }
@@ -349,9 +349,16 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
     final hostnameStr = hostname.toNativeUtf8();
     _libCrypto.X509_VERIFY_PARAM_set1_host(
-        _libSsl.SSL_get0_param(_ssl), hostnameStr.cast(), hostnameStr.length);
-    _libSsl.SSL_ctrl(_ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
-        TLSEXT_NAMETYPE_host_name, hostnameStr.cast());
+      _libSsl.SSL_get0_param(_ssl),
+      hostnameStr.cast(),
+      hostnameStr.length,
+    );
+    _libSsl.SSL_ctrl(
+      _ssl,
+      SSL_CTRL_SET_TLSEXT_HOSTNAME,
+      TLSEXT_NAMETYPE_host_name,
+      hostnameStr.cast(),
+    );
     malloc.free(hostnameStr);
   }
 
@@ -364,11 +371,13 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     final ciphersPointer = _libSsl.SSL_get1_supported_ciphers(_ssl);
 
     if (ciphersPointer == nullptr) {
-      close().then((_) => throw DtlsException(
-            "No ciphers available. "
-            "If you are using PSK cipher suites, check you have defined a "
-            "pskCredentialsCallback.",
-          ));
+      close().then(
+        (_) => throw DtlsException(
+          "No ciphers available. "
+          "If you are using PSK cipher suites, check you have defined a "
+          "pskCredentialsCallback.",
+        ),
+      );
     }
   }
 
@@ -381,12 +390,13 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   static int _pskCallback(
-      Pointer<SSL> ssl,
-      Pointer<Char> hint,
-      Pointer<Char> identity,
-      int maxIdentityLength,
-      Pointer<UnsignedChar> psk,
-      int maxPskLength) {
+    Pointer<SSL> ssl,
+    Pointer<Char> hint,
+    Pointer<Char> identity,
+    int maxIdentityLength,
+    Pointer<UnsignedChar> psk,
+    int maxPskLength,
+  ) {
     final connection = DtlsClient._connections[ssl.address];
 
     if (connection == null) {
@@ -454,10 +464,13 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   void _handleError(int ret, void Function(Exception) errorHandler) {
     final code = _libSsl.SSL_get_error(_ssl, ret);
     if (code == SSL_ERROR_SSL) {
-      errorHandler(DtlsException(
+      errorHandler(
+        DtlsException(
           _libCrypto.ERR_error_string(_libCrypto.ERR_get_error(), nullptr)
               .cast<Utf8>()
-              .toDartString()));
+              .toDartString(),
+        ),
+      );
     } else if (code == SSL_ERROR_ZERO_RETURN) {
       close();
     }
@@ -473,12 +486,12 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       _connectCompleter.complete(this);
     } else if (ret == 0) {
       state = ConnectionState.shutdown;
-      _connectCompleter.completeError(DtlsException('handshake shut down'));
+      _connectCompleter.completeError(DtlsException("handshake shut down"));
     } else {
       if (res == 0) {
         state = ConnectionState.shutdown;
         _connectCompleter
-            .completeError(SocketException('Network is unreachable'));
+            .completeError(const SocketException("Network is unreachable"));
         return;
       }
 
@@ -564,10 +577,18 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   @override
-  StreamSubscription<Datagram> listen(void Function(Datagram event)? onData,
-          {Function? onError, void Function()? onDone, bool? cancelOnError}) =>
-      _received.stream.listen(onData,
-          onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  StreamSubscription<Datagram> listen(
+    void Function(Datagram event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) =>
+      _received.stream.listen(
+        onData,
+        onError: onError,
+        onDone: onDone,
+        cancelOnError: cancelOnError,
+      );
 }
 
 /// The context contains settings for DTLS session establishment.
@@ -613,7 +634,7 @@ class DtlsClientContext {
     if (certs.isEmpty) return;
     final bufLen = certs.map((c) => c.length).reduce(max);
     final buf = malloc.call<UnsignedChar>(bufLen);
-    final data = malloc.call<Pointer<UnsignedChar>>(1);
+    final data = malloc.call<Pointer<UnsignedChar>>();
     final store = libSsl.SSL_CTX_get_cert_store(ctx);
 
     for (final cert in certs) {
@@ -639,7 +660,10 @@ class DtlsClientContext {
 
     _addRoots(_rootCertificates, ctx, libSsl);
     libSsl.SSL_CTX_set_verify(
-        ctx, _verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, nullptr);
+      ctx,
+      _verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE,
+      nullptr,
+    );
 
     final ciphers = _ciphers;
     if (ciphers != null) {

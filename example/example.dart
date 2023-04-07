@@ -2,11 +2,13 @@
 // Copyright (c) 2021 Famedly GmbH
 // SPDX-License-Identifier: MIT
 
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
+// ignore_for_file: avoid_print
 
-import 'package:dtls2/dtls2.dart';
+import "dart:async";
+import "dart:convert";
+import "dart:io";
+
+import "package:dtls2/dtls2.dart";
 
 const _identity = "Client_identity";
 
@@ -29,7 +31,6 @@ Iterable<int>? _serverPskCallback(List<int> identity) {
 }
 
 final context = DtlsClientContext(
-  verify: true,
   withTrustedRoots: true,
   ciphers: _ciphers,
   pskCredentialsCallback: (identityHint) {
@@ -44,23 +45,24 @@ final context = DtlsClientContext(
 void main() async {
   const bindAddress = "::";
   final peerAddress = InternetAddress("::1");
-  final peerPort = 5684;
+  const peerPort = 5684;
 
   final dtlsServer = await DtlsServer.bind(
-      bindAddress,
-      peerPort,
-      DtlsServerContext(
-        pskKeyStoreCallback: _serverPskCallback,
-        ciphers: _ciphers,
-        identityHint: "This is the identity hint!",
-      ));
+    bindAddress,
+    peerPort,
+    DtlsServerContext(
+      pskKeyStoreCallback: _serverPskCallback,
+      ciphers: _ciphers,
+      identityHint: "This is the identity hint!",
+    ),
+  );
 
   dtlsServer.listen(
     (connection) {
       connection.listen(
         (event) async {
           print(utf8.decode(event.data));
-          connection.send(utf8.encode('Bye World'));
+          connection.send(utf8.encode("Bye World"));
           await connection.close();
         },
         onDone: () async {
@@ -80,7 +82,7 @@ void main() async {
       peerAddress,
       peerPort,
       context,
-      timeout: Duration(seconds: 5),
+      timeout: const Duration(seconds: 5),
     );
   } on TimeoutException {
     await dtlsClient.close();
@@ -92,12 +94,12 @@ void main() async {
       (datagram) async {
         print(utf8.decode(datagram.data));
         await connection.close();
-        print('Client connection closed.');
+        print("Client connection closed.");
       },
       onDone: () async {
         await dtlsClient.close();
-        print('Client closed.');
+        print("Client closed.");
       },
     )
-    ..send(utf8.encode('Hello World'));
+    ..send(utf8.encode("Hello World"));
 }

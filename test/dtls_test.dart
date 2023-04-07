@@ -2,14 +2,14 @@
 // Copyright (c) 2021 Famedly GmbH
 // SPDX-License-Identifier: MIT
 
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
+import "dart:async";
+import "dart:convert";
+import "dart:io";
+import "dart:typed_data";
 
-import 'package:dtls2/dtls2.dart';
-import 'package:dtls2/src/dtls_alert.dart';
-import 'package:test/test.dart';
+import "package:dtls2/dtls2.dart";
+import "package:dtls2/src/dtls_alert.dart";
+import "package:test/test.dart";
 
 const ciphers = "PSK-AES128-CCM8";
 
@@ -36,7 +36,6 @@ Iterable<int>? _serverPskCallback(Iterable<int> identity) {
 }
 
 final clientContext = DtlsClientContext(
-  verify: true,
   withTrustedRoots: true,
   ciphers: ciphers,
   pskCredentialsCallback: (receivedIdentityHint) {
@@ -56,13 +55,13 @@ final serverContext = DtlsServerContext(
 );
 
 void main() {
-  test('create and free context and connection', () async {
+  test("create and free context and connection", () async {
     final dtlsClient = await DtlsClient.bind(bindAddress, 0);
     await dtlsClient.close();
   });
 
   test(
-    'Client and server test',
+    "Client and server test",
     () async {
       final completer = Completer<void>();
       const address = "127.0.0.1";
@@ -72,8 +71,8 @@ void main() {
       final dtlsServer =
           await DtlsServer.bind(bindAddress, port, serverContext);
 
-      final clientPayload = "Hello World";
-      final serverPayload = "Bye World";
+      const clientPayload = "Hello World";
+      const serverPayload = "Bye World";
 
       dtlsServer.listen(
         (connection) {
@@ -119,13 +118,15 @@ void main() {
     },
     onPlatform: <String, dynamic>{
       "mac-os": [
-        Skip("on macOS, SSL_connct somehow fails. This needs to be fixed."),
+        const Skip(
+          "on macOS, SSL_connct somehow fails. This needs to be fixed.",
+        ),
       ]
     },
   );
 
-  test('Parse DTLS alerts', () {
-    final code = 1 << 8;
+  test("Parse DTLS alerts", () {
+    const code = 1 << 8;
 
     final alert = DtlsAlert.fromCode(code);
     expect(alert?.alertLevel, AlertLevel.warning);

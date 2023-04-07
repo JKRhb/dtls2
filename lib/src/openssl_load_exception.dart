@@ -16,6 +16,6 @@ class OpenSslLoadException implements Exception {
 
   @override
   String toString() {
-    return "$runtimeType: Could not find $libName.";
+    return "OpenSslLoadException: Could not find $libName.";
   }
 }

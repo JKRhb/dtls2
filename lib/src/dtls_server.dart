@@ -1,23 +1,22 @@
 // Copyright (c) 2023 Jan Romann
 // SPDX-License-Identifier: MIT
 
-import 'dart:async';
-import 'dart:convert';
-import 'dart:ffi';
-import 'dart:io';
-import 'dart:math';
-import 'dart:typed_data';
+import "dart:async";
+import "dart:convert";
+import "dart:ffi";
+import "dart:io";
+import "dart:math";
+import "dart:typed_data";
 
-import 'package:collection/collection.dart';
-import 'package:ffi/ffi.dart';
-
-import 'buffer.dart';
-import 'dtls_alert.dart';
-import 'dtls_connection.dart';
-import 'dtls_exception.dart';
-import 'generated/ffi.dart';
-import 'lib.dart';
-import 'util.dart';
+import "package:collection/collection.dart";
+import "package:dtls2/src/buffer.dart";
+import "package:dtls2/src/dtls_alert.dart";
+import "package:dtls2/src/dtls_connection.dart";
+import "package:dtls2/src/dtls_exception.dart";
+import "package:dtls2/src/generated/ffi.dart";
+import "package:dtls2/src/lib.dart";
+import "package:dtls2/src/util.dart";
+import "package:ffi/ffi.dart";
 
 /// Callback signature for retrieving Pre-Shared Keys from a [DtlsServer]'s
 /// keystore.
@@ -111,7 +110,6 @@ class DtlsServer extends Stream<DtlsConnection> {
       this,
       datagram.address,
       datagram.port,
-      _context,
       _sslContext,
       _libCrypto,
       _libSsl,
@@ -151,7 +149,10 @@ class DtlsServer extends Stream<DtlsConnection> {
   int _send(_DtlsServerConnection dtlsServerConnection, List<int> data) {
     buffer.asTypedList(bufferSize).setAll(0, data);
     final ret = _libSsl.SSL_write(
-        dtlsServerConnection._ssl, buffer.cast(), data.length);
+      dtlsServerConnection._ssl,
+      buffer.cast(),
+      data.length,
+    );
     dtlsServerConnection._maintainOutgoing();
     if (ret < 0) {
       dtlsServerConnection._handleError(ret, (e) => throw e);
@@ -185,9 +186,13 @@ class DtlsServer extends Stream<DtlsConnection> {
 
     _libSsl
       ..SSL_CTX_set_cookie_generate_cb(
-          _sslContext, Pointer.fromFunction(_dtlsCookieGenerateCallback, error))
+        _sslContext,
+        Pointer.fromFunction(_dtlsCookieGenerateCallback, error),
+      )
       ..SSL_CTX_set_cookie_verify_cb(
-          _sslContext, Pointer.fromFunction(_dtlsCookieVerifyCallback, error))
+        _sslContext,
+        Pointer.fromFunction(_dtlsCookieVerifyCallback, error),
+      )
       ..SSL_CTX_set_info_callback(
         _sslContext,
         Pointer.fromFunction(_infoCallback),
@@ -229,7 +234,6 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
     this._dtlsServer,
     this._address,
     this._port,
-    DtlsServerContext context,
     Pointer<SSL_CTX> _sslContext,
     this._libCrypto,
     this._libSsl,
@@ -393,10 +397,13 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
   void _handleError(int ret, [void Function(Exception)? errorHandler]) {
     final code = _libSsl.SSL_get_error(_ssl, ret);
     if (code == SSL_ERROR_SSL) {
-      errorHandler?.call(DtlsException(
+      errorHandler?.call(
+        DtlsException(
           _libCrypto.ERR_error_string(_libCrypto.ERR_get_error(), nullptr)
               .cast<Utf8>()
-              .toDartString()));
+              .toDartString(),
+        ),
+      );
     } else if (code == SSL_ERROR_ZERO_RETURN) {
       close();
     }
@@ -456,7 +463,7 @@ class DtlsServerContext {
     if (certs.isEmpty) return;
     final bufLen = certs.map((c) => c.length).reduce(max);
     final buf = malloc.call<UnsignedChar>(bufLen);
-    final data = malloc.call<Pointer<UnsignedChar>>(1);
+    final data = malloc.call<Pointer<UnsignedChar>>();
     final store = libSsl.SSL_CTX_get_cert_store(ctx);
 
     for (final cert in certs) {
@@ -482,7 +489,10 @@ class DtlsServerContext {
 
     _addRoots(_rootCertificates, ctx, libSsl);
     libSsl.SSL_CTX_set_verify(
-        ctx, _verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, nullptr);
+      ctx,
+      _verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE,
+      nullptr,
+    );
 
     final ciphers = _ciphers;
     if (ciphers != null) {
@@ -493,8 +503,14 @@ class DtlsServerContext {
 
     if (_pskKeyStoreCallback != null) {
       const error = -1;
-      final Pointer<NativeFunction<_PskCallbackFunction>> callback =
-          Pointer.fromFunction(_pskCallback, error);
+      final callback = Pointer.fromFunction<
+          UnsignedInt Function(
+        Pointer<SSL>,
+        Pointer<Char>,
+        Pointer<UnsignedChar>,
+        UnsignedInt,
+      )>(_pskCallback, error);
+
       libSsl.SSL_CTX_set_psk_server_callback(ctx, callback);
     }
 
@@ -509,15 +525,12 @@ class DtlsServerContext {
   }
 }
 
-typedef _PskCallbackFunction = UnsignedInt Function(
-  Pointer<SSL>,
-  Pointer<Char>,
-  Pointer<UnsignedChar>,
-  UnsignedInt,
-);
-
-int _pskCallback(Pointer<SSL> ssl, Pointer<Char> identity,
-    Pointer<UnsignedChar> psk, int maxPskLength) {
+int _pskCallback(
+  Pointer<SSL> ssl,
+  Pointer<Char> identity,
+  Pointer<UnsignedChar> psk,
+  int maxPskLength,
+) {
   final connection = _getServerConnection(ssl);
 
   final identityString = identity.cast<Utf8>().toDartString();
@@ -602,7 +615,7 @@ int _dtlsCookieVerifyCallback(
 
   final peerCookie = cookie.cast<Uint8>().asTypedList(cookieLength);
 
-  return ListEquality<int>().equals(connectionCookie, peerCookie) ? 1 : 0;
+  return const ListEquality<int>().equals(connectionCookie, peerCookie) ? 1 : 0;
 }
 
 extension _ClintHelloParseExtension on Uint8List {
