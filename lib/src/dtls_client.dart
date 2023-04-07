@@ -179,7 +179,13 @@ class DtlsClient {
     );
     dtlsClientConnection._maintainOutgoing();
     if (ret < 0) {
-      dtlsClientConnection._handleError(ret, (e) => throw e);
+      dtlsClientConnection._handleError(
+        ret,
+        () {
+          close();
+          throw DtlsException("Sending data to peer has failed.");
+        },
+      );
     }
     return ret;
   }
@@ -234,6 +240,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     _setHostname(hostname);
     _setPskCallback();
     _checkSslCiphers();
+    _dtlsClient._saveConnection(this, _address, _port);
     _connectToPeer();
   }
 
@@ -260,8 +267,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       libSsl,
       connectCompleter,
     );
-
-    dtlsClient._saveConnection(connection, address, port);
 
     final future = connectCompleter.future;
 
@@ -461,19 +466,24 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
   final DtlsClient _dtlsClient;
 
-  void _handleError(int ret, void Function(Exception) errorHandler) {
+  void _handleError(int ret, void Function() errorHandler) {
+    // TODO: Error code handling needs to be reworked.
     final code = _libSsl.SSL_get_error(_ssl, ret);
-    if (code == SSL_ERROR_SSL) {
-      errorHandler(
-        DtlsException(
-          _libCrypto.ERR_error_string(_libCrypto.ERR_get_error(), nullptr)
-              .cast<Utf8>()
-              .toDartString(),
-        ),
-      );
-    } else if (code == SSL_ERROR_ZERO_RETURN) {
-      close();
+    switch (code) {
+      case SSL_ERROR_SSL:
+      case SSL_ERROR_SYSCALL:
+        close();
+        errorHandler();
+        break;
+      case SSL_ERROR_ZERO_RETURN:
+        close();
     }
+  }
+
+  void _abortHandshake(Exception exception) {
+    state = ConnectionState.shutdown;
+    close();
+    _connectCompleter.completeError(exception);
   }
 
   void _connectToPeer() {
@@ -485,17 +495,17 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       state = ConnectionState.connected;
       _connectCompleter.complete(this);
     } else if (ret == 0) {
-      state = ConnectionState.shutdown;
-      _connectCompleter.completeError(DtlsException("handshake shut down"));
+      _abortHandshake(DtlsException("Handshake shut down"));
     } else {
       if (res == 0) {
-        state = ConnectionState.shutdown;
-        _connectCompleter
-            .completeError(const SocketException("Network is unreachable"));
+        _abortHandshake(DtlsException("Network is unreachable"));
         return;
       }
 
-      _handleError(ret, _connectCompleter.completeError);
+      _handleError(
+        ret,
+        () => _abortHandshake(DtlsException("DTLS Handshake has failed.")),
+      );
     }
   }
 
@@ -569,7 +579,10 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
         _maintainOutgoing();
       } else {
         _maintainOutgoing();
-        _handleError(ret, _received.addError);
+        _handleError(
+          ret,
+          () => _received.addError(DtlsException("An error has occured.")),
+        );
       }
     } else {
       _connectToPeer();
