@@ -31,6 +31,11 @@ jobs:
           choco install openssl
         if: ${{ matrix.os == 'windows-latest' }}
 
+      - name: Install OpenSSL (macOs)
+        run: |
+          brew install openssl
+        if: ${{ matrix.os == 'macos-latest' }}
+
       - name: Run tests with coverage
         run: dart run coverage:test_with_coverage
 
