@@ -19,13 +19,6 @@ import 'generated/ffi.dart';
 import 'lib.dart';
 import 'util.dart';
 
-enum _ServerConnectionState {
-  uninitialized,
-  handshake,
-  connected,
-  shutdown,
-}
-
 /// Callback signature for retrieving Pre-Shared Keys from a [DtlsServer]'s
 /// keystore.
 typedef PskKeyStoreCallback = Iterable<int>? Function(List<int> identity);
@@ -268,10 +261,11 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
   final cookie = _generateCookie();
 
-  _ServerConnectionState _state = _ServerConnectionState.uninitialized;
+  @override
+  ConnectionState state = ConnectionState.uninitialized;
 
   @override
-  bool get connected => _state == _ServerConnectionState.connected;
+  bool get connected => state == ConnectionState.connected;
 
   bool _closed = false;
 
@@ -288,7 +282,7 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
   }
 
   void _maintainState() {
-    if (_state == _ServerConnectionState.uninitialized) {
+    if (state == ConnectionState.uninitialized) {
       _connectToPeer();
       return;
     }
@@ -296,13 +290,13 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
     final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
 
     if (ret > 0) {
-      if (_state == _ServerConnectionState.handshake) {
+      if (state == ConnectionState.handshake) {
         final acceptValue = _libSsl.SSL_accept(_ssl);
 
         if (acceptValue == 1) {
-          _state = _ServerConnectionState.connected;
+          state = ConnectionState.connected;
         } else {
-          _state = _ServerConnectionState.shutdown;
+          state = ConnectionState.shutdown;
           close();
           return;
         }
@@ -324,7 +318,7 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
     final ret = _libSsl.DTLSv1_listen(_ssl, _bioAddr);
     _maintainOutgoing();
     if (ret == 1) {
-      _state = _ServerConnectionState.handshake;
+      state = ConnectionState.handshake;
       _dtlsServer._connectionStream.add(this);
     } else {
       _handleError(ret);
@@ -360,14 +354,14 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
     _dtlsServer._removeConnection(_address, _port);
 
-    if (_state == _ServerConnectionState.connected) {
-      _state = _ServerConnectionState.shutdown;
+    if (state == ConnectionState.connected) {
+      state = ConnectionState.shutdown;
       _libSsl.SSL_shutdown(_ssl);
       _maintainState();
       await _received.close();
     }
 
-    _state = _ServerConnectionState.shutdown;
+    state = ConnectionState.shutdown;
 
     _libSsl.SSL_free(_ssl);
     _libCrypto.BIO_ADDR_free(_bioAddr);
@@ -389,7 +383,7 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
   @override
   int send(List<int> data) {
-    if (_state != _ServerConnectionState.connected) {
+    if (state != ConnectionState.connected) {
       throw DtlsException("Sending failed: Not connected!");
     }
 

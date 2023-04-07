@@ -20,4 +20,25 @@ abstract class DtlsConnection extends Stream<Datagram> {
 
   /// Closes this [DtlsConnection].
   Future<void> close();
+
+  /// Indicates the current state of this [DtlsConnection].
+  ConnectionState get state;
+}
+
+/// Indicates the
+enum ConnectionState {
+  /// The connection has not been initialized yet.
+  uninitialized,
+
+  /// The DTLS handshake is currently being performed.
+  handshake,
+
+  /// The handshake was successful, the [DtlsConnection] has been established.
+  connected,
+
+  /// The [DtlsConnection] has been shutdown.
+  ///
+  /// This can either be due to an orderly shutdown or due to an error during
+  /// the handshake process.
+  shutdown,
 }
