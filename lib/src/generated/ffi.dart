@@ -850,6 +850,8 @@ const int SSL_AD_UNEXPECTED_MESSAGE = 10;
 
 const int SSL_ERROR_SSL = 1;
 
+const int SSL_ERROR_SYSCALL = 5;
+
 const int SSL_ERROR_ZERO_RETURN = 6;
 
 const int SSL_CTRL_SET_TLSEXT_HOSTNAME = 55;
