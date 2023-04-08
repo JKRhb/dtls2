@@ -498,7 +498,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       _abortHandshake(DtlsException("Handshake shut down"));
     } else {
       if (res == 0) {
-        _abortHandshake(DtlsException("Network is unreachable"));
+        _abortHandshake(const SocketException("Network is unreachable"));
         return;
       }
 
