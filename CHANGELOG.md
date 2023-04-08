@@ -1,3 +1,10 @@
+## 0.14.0
+
+- fix(server): fix server behavior during handshake
+- feat: expose state of connections
+- chore: use lint package for stricter linting
+- fix(dtls_client): improve error handling
+
 ## 0.13.4
 
 - fix: shutdown connections only when actually connected
