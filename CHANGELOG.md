@@ -1,3 +1,7 @@
+## 0.14.1
+
+- fix(client): throw SocketException if Network is unreachable
+
 ## 0.14.0
 
 - fix(server): fix server behavior during handshake
