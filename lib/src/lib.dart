@@ -38,7 +38,7 @@ OpenSsl _loadLibSsl() {
       "libssl.1.1.dylib",
     ];
   } else {
-    libNames = const ["libssl.so"];
+    libNames = const ["libssl.so", "libssl.so.3"];
   }
 
   return _loadLibrary(libNames, "libssl");
@@ -62,7 +62,7 @@ OpenSsl _loadLibCrypto() {
       "libcrypto.1.1.dylib",
     ];
   } else {
-    libNames = const ["libcrypto.so"];
+    libNames = const ["libcrypto.so", "libcrypto.so.3"];
   }
 
   return _loadLibrary(libNames, "libcrypto");
