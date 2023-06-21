@@ -228,7 +228,7 @@ class DtlsServer extends Stream<DtlsConnection> {
 }
 
 /// This Event is emitted if a [DtlsServer] receives application data.
-class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
+class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
   /// Create a [_DtlsServerConnection] using a [DtlsServerContext].
   _DtlsServerConnection(
     this._dtlsServer,
@@ -271,13 +271,20 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
   @override
   bool get connected => state == ConnectionState.connected;
 
-  bool _closed = false;
-
   Timer? _timer;
 
   final OpenSsl _libSsl;
 
   final OpenSsl _libCrypto;
+
+  void _performShutdown([Exception? exception]) {
+    state = ConnectionState.closed;
+    close();
+
+    if (exception != null) {
+      throw exception;
+    }
+  }
 
   static List<int> _generateCookie() {
     const cookieLength = 32;
@@ -300,8 +307,7 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
         if (acceptValue == 1) {
           state = ConnectionState.connected;
         } else {
-          state = ConnectionState.shutdown;
-          close();
+          _performShutdown();
           return;
         }
       }
@@ -332,7 +338,12 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
   void _maintainOutgoing() {
     final ret = _libCrypto.BIO_read(_wbio, buffer.cast(), bufferSize);
     if (ret > 0) {
-      _dtlsServer._socket.send(buffer.asTypedList(ret), _address, _port);
+      final bytesSent =
+          _dtlsServer._socket.send(buffer.asTypedList(ret), _address, _port);
+
+      if (bytesSent <= 0) {
+        _performShutdown(const SocketException("Network unreachable."));
+      }
     }
     _timer?.cancel();
     if (_libSsl.SSL_ctrl(_ssl, DTLS_CTRL_GET_TIMEOUT, 0, buffer.cast()) > 0) {
@@ -348,27 +359,25 @@ class _DtlsServerConnection extends Stream<Datagram> implements DtlsConnection {
 
   @override
   Future<void> close() async {
-    if (_closed) {
+    if (!state.canBeClosed) {
       return;
     }
 
-    _closed = true;
+    final wasConnected = connected;
+    state = ConnectionState.closing;
 
     _timer?.cancel();
-
     _dtlsServer._removeConnection(_address, _port);
 
-    if (state == ConnectionState.connected) {
-      state = ConnectionState.shutdown;
+    if (wasConnected) {
       _libSsl.SSL_shutdown(_ssl);
       _maintainState();
       await _received.close();
     }
 
-    state = ConnectionState.shutdown;
-
     _libSsl.SSL_free(_ssl);
     _libCrypto.BIO_ADDR_free(_bioAddr);
+    state = ConnectionState.closed;
   }
 
   @override
@@ -505,11 +514,11 @@ class DtlsServerContext {
       const error = -1;
       final callback = Pointer.fromFunction<
           UnsignedInt Function(
-        Pointer<SSL>,
-        Pointer<Char>,
-        Pointer<UnsignedChar>,
-        UnsignedInt,
-      )>(_pskCallback, error);
+            Pointer<SSL>,
+            Pointer<Char>,
+            Pointer<UnsignedChar>,
+            UnsignedInt,
+          )>(_pskCallback, error);
 
       libSsl.SSL_CTX_set_psk_server_callback(ctx, callback);
     }

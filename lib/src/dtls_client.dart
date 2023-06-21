@@ -153,21 +153,29 @@ class DtlsClient {
   }) async {
     final existingConnection = _retrieveConnection(address, port);
 
-    if (existingConnection != null && !existingConnection._closed) {
-      return existingConnection;
+    if (existingConnection == null) {
+      return _DtlsClientConnection._connect(
+        this,
+        hostname,
+        address,
+        port,
+        context._generateSslContext(_libSsl),
+        context._pskCredentialsCallback,
+        _libCrypto,
+        _libSsl,
+        timeout: timeout,
+      );
     }
 
-    return _DtlsClientConnection._connect(
-      this,
-      hostname,
-      address,
-      port,
-      context._generateSslContext(_libSsl),
-      context._pskCredentialsCallback,
-      _libCrypto,
-      _libSsl,
-      timeout: timeout,
-    );
+    if (!existingConnection.connected) {
+      throw StateError(
+        "Client connection to peer "
+        "${existingConnection._address}:${existingConnection._port} "
+        "has not been properly cleaned up.",
+      );
+    }
+
+    return existingConnection;
   }
 
   int _send(_DtlsClientConnection dtlsClientConnection, List<int> data) {
@@ -218,7 +226,7 @@ class DtlsClient {
   }
 }
 
-class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
+class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   /// Create a [_DtlsClientConnection] using a [DtlsClientContext].
   /// The [hostname] is used for Server Name Indication
   /// and to verify the certificate.
@@ -283,8 +291,6 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     return future;
   }
 
-  bool _closed = false;
-
   final Pointer<SSL> _ssl;
 
   final InternetAddress _address;
@@ -336,13 +342,13 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
 
     final callback = Pointer.fromFunction<
         UnsignedInt Function(
-      Pointer<SSL>,
-      Pointer<Char>,
-      Pointer<Char>,
-      UnsignedInt,
-      Pointer<UnsignedChar>,
-      UnsignedInt,
-    )>(_pskCallback, _pskErrorCode);
+          Pointer<SSL>,
+          Pointer<Char>,
+          Pointer<Char>,
+          UnsignedInt,
+          Pointer<UnsignedChar>,
+          UnsignedInt,
+        )>(_pskCallback, _pskErrorCode);
 
     _libSsl.SSL_set_psk_client_callback(_ssl, callback);
   }
@@ -480,31 +486,36 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     }
   }
 
-  void _abortHandshake(Exception exception) {
-    state = ConnectionState.shutdown;
+  void _performShutdown(Exception exception) {
+    final wasInHandshake = inHandshake;
     close();
-    _connectCompleter.completeError(exception);
+
+    if (wasInHandshake) {
+      _connectCompleter.completeError(exception);
+    } else {
+      throw exception;
+    }
   }
 
   void _connectToPeer() {
     state = ConnectionState.handshake;
     final ret = _libSsl.SSL_connect(_ssl);
-    final res = _maintainOutgoing();
+    final success = _maintainOutgoing();
 
     if (ret == 1) {
       state = ConnectionState.connected;
       _connectCompleter.complete(this);
     } else if (ret == 0) {
-      _abortHandshake(DtlsException("Handshake shut down"));
+      _performShutdown(DtlsException("Handshake shut down"));
     } else {
-      if (res == 0) {
-        _abortHandshake(const SocketException("Network is unreachable"));
+      if (!success) {
+        _performShutdown(const SocketException("Network is unreachable"));
         return;
       }
 
       _handleError(
         ret,
-        () => _abortHandshake(DtlsException("DTLS Handshake has failed.")),
+        () => _performShutdown(DtlsException("DTLS Handshake has failed.")),
       );
     }
   }
@@ -524,24 +535,26 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
   /// [DtlsException].
   @override
   Future<void> close() async {
-    if (_closed) {
+    if (!state.canBeClosed) {
       return;
     }
 
-    _closed = true;
+    final wasConnected = connected;
+
+    state = ConnectionState.closing;
 
     _timer?.cancel();
 
     _dtlsClient._removeConnection(_address, _port);
 
-    if (connected) {
+    if (wasConnected) {
       _libSsl.SSL_shutdown(_ssl);
       _maintainState();
       await _received.close();
     }
 
-    state = ConnectionState.shutdown;
     _libSsl.SSL_free(_ssl);
+    state = ConnectionState.closed;
   }
 
   void _incoming(Uint8List input) {
@@ -550,15 +563,16 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
     _maintainState();
   }
 
-  int _maintainOutgoing() {
+  bool _maintainOutgoing() {
     final ret = _libCrypto.BIO_read(_wbio, buffer.cast(), bufferSize);
-    final int bytesSent;
 
     if (ret > 0) {
-      bytesSent =
+      final bytesSent =
           _dtlsClient._socket.send(buffer.asTypedList(ret), _address, _port);
-    } else {
-      bytesSent = -1;
+
+      if (bytesSent <= 0) {
+        return false;
+      }
     }
 
     _timer?.cancel();
@@ -566,7 +580,7 @@ class _DtlsClientConnection extends Stream<Datagram> implements DtlsConnection {
       _timer = Timer(buffer.cast<timeval>().ref.duration, _maintainState);
     }
 
-    return bytesSent;
+    return true;
   }
 
   void _maintainState() {
