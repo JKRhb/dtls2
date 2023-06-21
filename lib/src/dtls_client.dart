@@ -342,13 +342,13 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
 
     final callback = Pointer.fromFunction<
         UnsignedInt Function(
-      Pointer<SSL>,
-      Pointer<Char>,
-      Pointer<Char>,
-      UnsignedInt,
-      Pointer<UnsignedChar>,
-      UnsignedInt,
-    )>(_pskCallback, _pskErrorCode);
+          Pointer<SSL>,
+          Pointer<Char>,
+          Pointer<Char>,
+          UnsignedInt,
+          Pointer<UnsignedChar>,
+          UnsignedInt,
+        )>(_pskCallback, _pskErrorCode);
 
     _libSsl.SSL_set_psk_client_callback(_ssl, callback);
   }

@@ -514,11 +514,11 @@ class DtlsServerContext {
       const error = -1;
       final callback = Pointer.fromFunction<
           UnsignedInt Function(
-        Pointer<SSL>,
-        Pointer<Char>,
-        Pointer<UnsignedChar>,
-        UnsignedInt,
-      )>(_pskCallback, error);
+            Pointer<SSL>,
+            Pointer<Char>,
+            Pointer<UnsignedChar>,
+            UnsignedInt,
+          )>(_pskCallback, error);
 
       libSsl.SSL_CTX_set_psk_server_callback(ctx, callback);
     }
