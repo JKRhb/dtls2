@@ -1,3 +1,9 @@
+## 0.15.0
+
+- fix: properly handle unreachable network
+- fix: avoid segmentation fault for client connection
+- feat: add additional library names for OpenSSL 3 discovery
+
 ## 0.14.1
 
 - fix(client): throw SocketException if Network is unreachable
