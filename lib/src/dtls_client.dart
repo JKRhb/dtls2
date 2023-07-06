@@ -515,7 +515,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
 
       _handleError(
         ret,
-        () => _performShutdown(DtlsException("DTLS Handshake has failed.")),
+        () => _performShutdown(DtlsHandshakeException("DTLS Handshake has failed.")),
       );
     }
   }
