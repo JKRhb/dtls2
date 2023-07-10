@@ -142,8 +142,8 @@ class DtlsClient {
   /// one. If you want to establish a connection using different credentials,
   /// then you need to close the old connection first.
   ///
-  /// If a [timeout] duration is defined, a [TimeoutException] will be thrown
-  /// if no connection could be established within the given time period.
+  /// If a [timeout] duration is defined, a [DtlsTimeoutException] will be
+  /// thrown if no connection could be established within the given time period.
   Future<DtlsConnection> connect(
     InternetAddress address,
     int port,
@@ -279,7 +279,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
         timeout,
         onTimeout: () async {
           await connection.close();
-          throw TimeoutException("Handshake timed out.");
+          throw DtlsTimeoutException("Handshake timed out.", timeout);
         },
       );
     }
