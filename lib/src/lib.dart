@@ -34,6 +34,7 @@ OpenSsl _loadLibSsl() {
     libNames = const [
       "/usr/local/opt/openssl@3/lib/libssl.3.dylib",
       "/usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib",
+      "/opt/homebrew/lib/libssl.dylib",
       "libssl.3.dylib",
       "libssl.1.1.dylib",
     ];
@@ -58,6 +59,7 @@ OpenSsl _loadLibCrypto() {
     libNames = const [
       "/usr/local/opt/openssl@3/lib/libcrypto.3.dylib",
       "/usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib",
+      "/opt/homebrew/lib/libcrypto.dylib",
       "libcrypto.3.dylib",
       "libcrypto.1.1.dylib",
     ];
