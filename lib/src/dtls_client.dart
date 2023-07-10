@@ -187,13 +187,9 @@ class DtlsClient {
     );
     dtlsClientConnection._maintainOutgoing();
     if (ret < 0) {
-      dtlsClientConnection._handleError(
-        ret,
-        () {
-          close();
-          throw DtlsException("Sending data to peer has failed.");
-        },
-      );
+      if (dtlsClientConnection._processErrorCode(ret)) {
+        throw DtlsException("Sending data to peer has failed.");
+      }
     }
     return ret;
   }
@@ -472,18 +468,18 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
 
   final DtlsClient _dtlsClient;
 
-  void _handleError(int ret, void Function() errorHandler) {
-    // TODO: Error code handling needs to be reworked.
+  bool _processErrorCode(int ret) {
     final code = _libSsl.SSL_get_error(_ssl, ret);
     switch (code) {
       case SSL_ERROR_SSL:
       case SSL_ERROR_SYSCALL:
         close();
-        errorHandler();
-        break;
+        return true;
       case SSL_ERROR_ZERO_RETURN:
         close();
     }
+
+    return false;
   }
 
   void _performShutdown(Exception exception) {
@@ -513,10 +509,9 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
         return;
       }
 
-      _handleError(
-        ret,
-        () => _performShutdown(DtlsException("DTLS Handshake has failed.")),
-      );
+      if (_processErrorCode(ret)) {
+        _performShutdown(DtlsHandshakeException("DTLS Handshake has failed."));
+      }
     }
   }
 
@@ -593,10 +588,10 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
         _maintainOutgoing();
       } else {
         _maintainOutgoing();
-        _handleError(
-          ret,
-          () => _received.addError(DtlsException("An error has occured.")),
-        );
+
+        if (_processErrorCode(ret)) {
+          _received.addError(DtlsException("An error has occured."));
+        }
       }
     } else {
       _connectToPeer();

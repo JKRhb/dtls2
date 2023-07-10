@@ -12,3 +12,12 @@ class DtlsException implements Exception {
   @override
   String toString() => "DtlsException: $message";
 }
+
+/// A [DtlsException] that is thrown when a DTLS handshake fails.
+class DtlsHandshakeException extends DtlsException {
+  /// Constructor.
+  DtlsHandshakeException(super.message);
+
+  @override
+  String toString() => "DtlsHandshakeException: $message";
+}
