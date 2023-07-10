@@ -1,6 +1,8 @@
 // Copyright (c) 2023 Jan Romann
 // SPDX-License-Identifier: MIT
 
+import "dart:async";
+
 /// This [Exception] is thrown when a DTLS related error occurs.
 class DtlsException implements Exception {
   /// Constructor.
@@ -20,4 +22,16 @@ class DtlsHandshakeException extends DtlsException {
 
   @override
   String toString() => "DtlsHandshakeException: $message";
+}
+
+/// [DtlsException] that indicates that a timeout has occured.
+class DtlsTimeoutException extends DtlsException implements TimeoutException {
+  @override
+  final Duration duration;
+
+  /// Constructor.
+  DtlsTimeoutException(super.message, this.duration);
+
+  @override
+  String toString() => "DtlsTimeoutException after $duration: $message";
 }
