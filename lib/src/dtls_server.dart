@@ -336,6 +336,10 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
   }
 
   void _maintainOutgoing() {
+    if (state == ConnectionState.closed) {
+      return;
+    }
+
     final ret = _libCrypto.BIO_read(_wbio, buffer.cast(), bufferSize);
     if (ret > 0) {
       final bytesSent =
