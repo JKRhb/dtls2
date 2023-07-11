@@ -483,13 +483,10 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   }
 
   void _performShutdown(Exception exception) {
-    final wasInHandshake = inHandshake;
     close();
 
-    if (wasInHandshake) {
+    if (!_connectCompleter.isCompleted) {
       _connectCompleter.completeError(exception);
-    } else {
-      throw exception;
     }
   }
 
