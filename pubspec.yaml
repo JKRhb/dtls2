@@ -4,7 +4,7 @@
 
 name: dtls2
 description: A DTLS library for Dart, implemented via FFI bindings to OpenSSL.
-version: 0.15.0
+version: 0.16.0
 repository: https://github.com/JKRhb/dtls2
 
 environment:

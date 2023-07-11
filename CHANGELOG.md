@@ -1,3 +1,15 @@
+## 0.16.0
+
+### New Features
+
+- Added support for M1 Macs using OpenSSL installed via Homebrew
+- Introduced a new `DtlsTimeoutException`
+
+### Fixes
+
+- Fixed a bug that could cause a segmentation fault for the server when a client closed the connection
+- Fixed a bug that caused failed client-side handshakes to emit uncatchable Exceptions
+
 ## 0.15.0
 
 - fix: properly handle unreachable network
