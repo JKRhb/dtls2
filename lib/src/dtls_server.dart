@@ -278,7 +278,6 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
   final OpenSsl _libCrypto;
 
   void _performShutdown([Exception? exception]) {
-    state = ConnectionState.closed;
     close();
 
     if (exception != null) {
@@ -346,6 +345,7 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
           _dtlsServer._socket.send(buffer.asTypedList(ret), _address, _port);
 
       if (bytesSent <= 0) {
+        // TODO: Check if the change of _performShutdown causes any problems
         _performShutdown(const SocketException("Network unreachable."));
       }
     }
