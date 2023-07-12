@@ -493,22 +493,28 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   void _connectToPeer() {
     state = ConnectionState.handshake;
     final ret = _libSsl.SSL_connect(_ssl);
-    final success = _maintainOutgoing();
 
     if (ret == 1) {
       state = ConnectionState.connected;
       _connectCompleter.complete(this);
-    } else if (ret == 0) {
-      _performShutdown(DtlsException("Handshake shut down"));
-    } else {
-      if (!success) {
-        _performShutdown(const SocketException("Network is unreachable"));
-        return;
-      }
+      return;
+    }
 
-      if (_processErrorCode(ret)) {
-        _performShutdown(DtlsHandshakeException("DTLS Handshake has failed."));
-      }
+    if (ret == 0) {
+      _performShutdown(DtlsException("Handshake shut down"));
+      return;
+    }
+
+    if (_processErrorCode(ret)) {
+      _performShutdown(DtlsHandshakeException("DTLS Handshake has failed."));
+      return;
+    }
+
+    final success = _maintainOutgoing();
+
+    if (!success) {
+      _performShutdown(const SocketException("Network is unreachable"));
+      return;
     }
   }
 
