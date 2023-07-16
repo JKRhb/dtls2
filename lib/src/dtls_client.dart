@@ -521,7 +521,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   @override
   int send(List<int> data) {
     if (!connected) {
-      throw DtlsException("Sending failed: Not connected!");
+      throw const SocketException("Sending failed: Not connected!");
     }
 
     return _dtlsClient._send(this, data);
