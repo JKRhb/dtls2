@@ -233,6 +233,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   /// and to verify the certificate.
   _DtlsClientConnection(
     this._dtlsClient,
+    String? hostname,
     this._address,
     this._port,
     Pointer<SSL_CTX> sslContext,
@@ -242,7 +243,12 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     this._connectCompleter,
   )   : _ssl = _libSsl.SSL_new(sslContext),
         _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
-        _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem());
+        _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()) {
+    _setBios();
+    _setInfoCallback(sslContext);
+    _setHostname(hostname);
+    _setPskCallback();
+  }
 
   static Future<_DtlsClientConnection> _connect(
     DtlsClient dtlsClient,
@@ -258,6 +264,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     final connectCompleter = Completer<_DtlsClientConnection>();
     final connection = _DtlsClientConnection(
       dtlsClient,
+      hostname,
       address,
       port,
       sslContext,
@@ -267,10 +274,6 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
       connectCompleter,
     );
 
-    connection._setBios();
-    connection._setInfoCallback(sslContext);
-    connection._setHostname(hostname);
-    connection._setPskCallback();
     await connection._checkSslCiphers();
     dtlsClient._saveConnection(connection, address, port);
     await connection._connectToPeer();
