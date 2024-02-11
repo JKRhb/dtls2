@@ -22,7 +22,7 @@ mixin DtlsConnection on Stream<Datagram> {
   ///
   /// Returns the number of bytes written. A [DtlsException] is thrown if the
   /// client or server is not connected to the peer anymore.
-  int send(List<int> data);
+  Future<int> send(List<int> data);
 
   /// Closes this [DtlsConnection].
   Future<void> close();
@@ -41,6 +41,9 @@ enum ConnectionState {
 
   /// The handshake was successful, the [DtlsConnection] has been established.
   connected(canBeClosed: true),
+
+  /// An error occurred, the connection needs to be closed as soon as possible.
+  requiresClosing(canBeClosed: true),
 
   /// The [DtlsConnection] is in the process of being shut down.
   ///

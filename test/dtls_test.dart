@@ -79,7 +79,8 @@ void main() {
           connection.listen(
             (event) async {
               expect(utf8.decode(event.data), clientPayload);
-              connection.send(Uint8List.fromList(utf8.encode(serverPayload)));
+              await connection
+                  .send(Uint8List.fromList(utf8.encode(serverPayload)));
             },
           );
         },
@@ -101,14 +102,14 @@ void main() {
 
       expect(connection.connected, isTrue);
 
-      connection
-        ..listen(
-          (datagram) async {
-            expect(utf8.decode(datagram.data), serverPayload);
-            completer.complete();
-          },
-        )
-        ..send(Uint8List.fromList(utf8.encode(clientPayload)));
+      connection.listen(
+        (datagram) async {
+          expect(utf8.decode(datagram.data), serverPayload);
+          completer.complete();
+        },
+      );
+
+      await connection.send(Uint8List.fromList(utf8.encode(clientPayload)));
 
       await completer.future;
       await dtlsServer.close();
