@@ -443,7 +443,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
 
   void _handleAlert(DtlsAlert event) {
     if (event.requiresClosing) {
-      close();
+      state = ConnectionState.requiresClosing;
     }
   }
 
@@ -591,6 +591,12 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   Future<void> _maintainState() async {
     if (_connectCompleter.isCompleted) {
       final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
+
+      if (state == ConnectionState.requiresClosing) {
+        await close();
+        return;
+      }
+
       if (ret > 0) {
         final data = Uint8List.fromList(buffer.asTypedList(ret));
         final datagram = Datagram(data, _address, _port);

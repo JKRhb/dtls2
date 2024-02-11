@@ -302,6 +302,11 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
 
     final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
 
+    if (state == ConnectionState.requiresClosing) {
+      await close();
+      return;
+    }
+
     if (ret > 0) {
       if (state == ConnectionState.handshake) {
         final acceptValue = _libSsl.SSL_accept(_ssl);
@@ -430,7 +435,7 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
 
   void _handleDtlsEvent(DtlsAlert event) {
     if (event.requiresClosing) {
-      close();
+      state = ConnectionState.requiresClosing;
     }
   }
 }
