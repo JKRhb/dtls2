@@ -42,6 +42,9 @@ enum ConnectionState {
   /// The handshake was successful, the [DtlsConnection] has been established.
   connected(canBeClosed: true),
 
+  /// An error occurred, the connection needs to be closed as soon as possible.
+  requiresClosing(canBeClosed: true),
+
   /// The [DtlsConnection] is in the process of being shut down.
   ///
   /// Before the state [closed] is reached, the connection will perform a clean
