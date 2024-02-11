@@ -84,7 +84,7 @@ class DtlsClient {
             final connection = _retrieveConnection(data.address, data.port);
 
             if (connection != null) {
-              connection._incoming(data.data);
+              await connection._incoming(data.data);
             }
           }
 
@@ -178,7 +178,10 @@ class DtlsClient {
     return existingConnection;
   }
 
-  int _send(_DtlsClientConnection dtlsClientConnection, List<int> data) {
+  Future<int> _send(
+    _DtlsClientConnection dtlsClientConnection,
+    List<int> data,
+  ) async {
     buffer.asTypedList(bufferSize).setAll(0, data);
     final ret = _libSsl.SSL_write(
       dtlsClientConnection._ssl,
@@ -187,7 +190,9 @@ class DtlsClient {
     );
     dtlsClientConnection._maintainOutgoing();
     if (ret < 0) {
-      if (dtlsClientConnection._processErrorCode(ret)) {
+      final hasFailed = await dtlsClientConnection._processErrorCode(ret);
+
+      if (hasFailed) {
         throw DtlsException("Sending data to peer has failed.");
       }
     }
@@ -228,7 +233,6 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   /// and to verify the certificate.
   _DtlsClientConnection(
     this._dtlsClient,
-    String? hostname,
     this._address,
     this._port,
     Pointer<SSL_CTX> sslContext,
@@ -238,15 +242,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     this._connectCompleter,
   )   : _ssl = _libSsl.SSL_new(sslContext),
         _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
-        _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()) {
-    _setBios();
-    _setInfoCallback(sslContext);
-    _setHostname(hostname);
-    _setPskCallback();
-    _checkSslCiphers();
-    _dtlsClient._saveConnection(this, _address, _port);
-    _connectToPeer();
-  }
+        _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem());
 
   static Future<_DtlsClientConnection> _connect(
     DtlsClient dtlsClient,
@@ -258,11 +254,10 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     OpenSsl libCrypto,
     OpenSsl libSsl, {
     Duration? timeout,
-  }) {
+  }) async {
     final connectCompleter = Completer<_DtlsClientConnection>();
     final connection = _DtlsClientConnection(
       dtlsClient,
-      hostname,
       address,
       port,
       sslContext,
@@ -271,6 +266,14 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
       libSsl,
       connectCompleter,
     );
+
+    connection._setBios();
+    connection._setInfoCallback(sslContext);
+    connection._setHostname(hostname);
+    connection._setPskCallback();
+    await connection._checkSslCiphers();
+    dtlsClient._saveConnection(connection, address, port);
+    await connection._connectToPeer();
 
     final future = connectCompleter.future;
 
@@ -374,16 +377,16 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
   ///
   /// If this is the case, the allocated resources are cleaned up by calling the
   /// [close] method.
-  void _checkSslCiphers() {
+  Future<void> _checkSslCiphers() async {
     final ciphersPointer = _libSsl.SSL_get1_supported_ciphers(_ssl);
 
     if (ciphersPointer == nullptr) {
-      close().then(
-        (_) => throw DtlsException(
-          "No ciphers available. "
-          "If you are using PSK cipher suites, check you have defined a "
-          "pskCredentialsCallback.",
-        ),
+      await close();
+
+      throw DtlsException(
+        "No ciphers available. "
+        "If you are using PSK cipher suites, check you have defined a "
+        "pskCredentialsCallback.",
       );
     }
   }
@@ -468,29 +471,29 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
 
   final DtlsClient _dtlsClient;
 
-  bool _processErrorCode(int ret) {
+  Future<bool> _processErrorCode(int ret) async {
     final code = _libSsl.SSL_get_error(_ssl, ret);
     switch (code) {
       case SSL_ERROR_SSL:
       case SSL_ERROR_SYSCALL:
-        close();
+        await close();
         return true;
       case SSL_ERROR_ZERO_RETURN:
-        close();
+        await close();
     }
 
     return false;
   }
 
-  void _performShutdown(Exception exception) {
-    close();
+  Future<void> _performShutdown(Exception exception) async {
+    await close();
 
     if (!_connectCompleter.isCompleted) {
       _connectCompleter.completeError(exception);
     }
   }
 
-  void _connectToPeer() {
+  Future<void> _connectToPeer() async {
     state = ConnectionState.handshake;
     final ret = _libSsl.SSL_connect(_ssl);
 
@@ -501,25 +504,29 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     }
 
     if (ret == 0) {
-      _performShutdown(DtlsException("Handshake shut down"));
+      await _performShutdown(DtlsException("Handshake shut down"));
       return;
     }
 
-    if (_processErrorCode(ret)) {
-      _performShutdown(DtlsHandshakeException("DTLS Handshake has failed."));
+    final hasFailed = await _processErrorCode(ret);
+
+    if (hasFailed) {
+      await _performShutdown(
+        DtlsHandshakeException("DTLS Handshake has failed."),
+      );
       return;
     }
 
     final success = _maintainOutgoing();
 
     if (!success) {
-      _performShutdown(const SocketException("Network is unreachable"));
+      await _performShutdown(const SocketException("Network is unreachable"));
       return;
     }
   }
 
   @override
-  int send(List<int> data) {
+  Future<int> send(List<int> data) async {
     if (!connected) {
       throw const SocketException("Sending failed: Not connected!");
     }
@@ -547,7 +554,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
 
     if (wasConnected) {
       _libSsl.SSL_shutdown(_ssl);
-      _maintainState();
+      await _maintainState();
       await _received.close();
     }
 
@@ -555,10 +562,10 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     state = ConnectionState.closed;
   }
 
-  void _incoming(Uint8List input) {
+  Future<void> _incoming(Uint8List input) async {
     buffer.asTypedList(bufferSize).setAll(0, input);
     _libCrypto.BIO_write(_rbio, buffer.cast(), input.length);
-    _maintainState();
+    await _maintainState();
   }
 
   bool _maintainOutgoing() {
@@ -581,7 +588,7 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     return true;
   }
 
-  void _maintainState() {
+  Future<void> _maintainState() async {
     if (_connectCompleter.isCompleted) {
       final ret = _libSsl.SSL_read(_ssl, buffer.cast(), bufferSize);
       if (ret > 0) {
@@ -592,12 +599,13 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
       } else {
         _maintainOutgoing();
 
-        if (_processErrorCode(ret)) {
+        final hasFailed = await _processErrorCode(ret);
+        if (hasFailed) {
           _received.addError(DtlsException("An error has occured."));
         }
       }
     } else {
-      _connectToPeer();
+      await _connectToPeer();
     }
   }
 

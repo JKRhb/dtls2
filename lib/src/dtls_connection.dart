@@ -22,7 +22,7 @@ mixin DtlsConnection on Stream<Datagram> {
   ///
   /// Returns the number of bytes written. A [DtlsException] is thrown if the
   /// client or server is not connected to the peer anymore.
-  int send(List<int> data);
+  Future<int> send(List<int> data);
 
   /// Closes this [DtlsConnection].
   Future<void> close();

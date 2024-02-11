@@ -62,7 +62,7 @@ void main() async {
       connection.listen(
         (event) async {
           print(utf8.decode(event.data));
-          connection.send(utf8.encode("Bye World"));
+          await connection.send(utf8.encode("Bye World"));
           await connection.close();
         },
         onDone: () async {
@@ -89,17 +89,16 @@ void main() async {
     rethrow;
   }
 
-  connection
-    ..listen(
-      (datagram) async {
-        print(utf8.decode(datagram.data));
-        await connection.close();
-        print("Client connection closed.");
-      },
-      onDone: () async {
-        await dtlsClient.close();
-        print("Client closed.");
-      },
-    )
-    ..send(utf8.encode("Hello World"));
+  connection.listen(
+    (datagram) async {
+      print(utf8.decode(datagram.data));
+      await connection.close();
+      print("Client connection closed.");
+    },
+    onDone: () async {
+      await dtlsClient.close();
+      print("Client closed.");
+    },
+  );
+  await connection.send(utf8.encode("Hello World"));
 }

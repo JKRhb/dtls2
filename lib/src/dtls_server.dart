@@ -88,7 +88,7 @@ class DtlsServer extends Stream<DtlsConnection> {
     ).._externalSocket = false;
   }
 
-  void _handleSocketRead() {
+  Future<void> _handleSocketRead() async {
     final datagram = _socket.receive();
     if (datagram == null) {
       return;
@@ -97,7 +97,7 @@ class DtlsServer extends Stream<DtlsConnection> {
     final connection = _retrieveConnection(datagram.address, datagram.port) ??
         _establishConnection(datagram);
 
-    connection?._incoming(datagram.data);
+    await connection?._incoming(datagram.data);
   }
 
   _DtlsServerConnection? _establishConnection(Datagram datagram) {
@@ -120,7 +120,7 @@ class DtlsServer extends Stream<DtlsConnection> {
     _socket.listen((event) async {
       switch (event) {
         case RawSocketEvent.read:
-          _handleSocketRead();
+          await _handleSocketRead();
           break;
         case RawSocketEvent.closed:
           await close();
@@ -146,16 +146,19 @@ class DtlsServer extends Stream<DtlsConnection> {
         cancelOnError: cancelOnError,
       );
 
-  int _send(_DtlsServerConnection dtlsServerConnection, List<int> data) {
+  Future<int> _send(
+    _DtlsServerConnection dtlsServerConnection,
+    List<int> data,
+  ) async {
     buffer.asTypedList(bufferSize).setAll(0, data);
     final ret = _libSsl.SSL_write(
       dtlsServerConnection._ssl,
       buffer.cast(),
       data.length,
     );
-    dtlsServerConnection._maintainOutgoing();
+    await dtlsServerConnection._maintainOutgoing();
     if (ret < 0) {
-      dtlsServerConnection._handleError(ret, (e) => throw e);
+      await dtlsServerConnection._handleError(ret, (e) => throw e);
     }
     return ret;
   }
@@ -277,8 +280,8 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
 
   final OpenSsl _libCrypto;
 
-  void _performShutdown([Exception? exception]) {
-    close();
+  Future<void> _performShutdown([Exception? exception]) async {
+    await close();
 
     if (exception != null) {
       throw exception;
@@ -291,9 +294,9 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
     return List<int>.generate(cookieLength, (i) => random.nextInt(256));
   }
 
-  void _maintainState() {
+  Future<void> _maintainState() async {
     if (state == ConnectionState.uninitialized) {
-      _connectToPeer();
+      await _connectToPeer();
       return;
     }
 
@@ -306,7 +309,7 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
         if (acceptValue == 1) {
           state = ConnectionState.connected;
         } else {
-          _performShutdown();
+          await _performShutdown();
           return;
         }
       }
@@ -314,27 +317,27 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
       final data = Uint8List.fromList(buffer.asTypedList(ret));
       final datagram = Datagram(data, _address, _port);
       _received.add(datagram);
-      _maintainOutgoing();
+      await _maintainOutgoing();
     } else {
-      _maintainOutgoing();
-      _handleError(ret);
+      await _maintainOutgoing();
+      await _handleError(ret);
     }
   }
 
   final Pointer<bio_addr_st> _bioAddr;
 
-  void _connectToPeer() {
+  Future<void> _connectToPeer() async {
     final ret = _libSsl.DTLSv1_listen(_ssl, _bioAddr);
-    _maintainOutgoing();
+    await _maintainOutgoing();
     if (ret == 1) {
       state = ConnectionState.handshake;
       _dtlsServer._connectionStream.add(this);
     } else {
-      _handleError(ret);
+      await _handleError(ret);
     }
   }
 
-  void _maintainOutgoing() {
+  Future<void> _maintainOutgoing() async {
     if (state == ConnectionState.closed) {
       return;
     }
@@ -346,7 +349,7 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
 
       if (bytesSent <= 0) {
         // TODO: Check if the change of _performShutdown causes any problems
-        _performShutdown(const SocketException("Network unreachable."));
+        await _performShutdown(const SocketException("Network unreachable."));
       }
     }
     _timer?.cancel();
@@ -355,10 +358,10 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
     }
   }
 
-  void _incoming(Uint8List input) {
+  Future<void> _incoming(Uint8List input) async {
     buffer.asTypedList(bufferSize).setAll(0, input);
     _libCrypto.BIO_write(_rbio, buffer.cast(), input.length);
-    _maintainState();
+    await _maintainState();
   }
 
   @override
@@ -375,7 +378,7 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
 
     if (wasConnected) {
       _libSsl.SSL_shutdown(_ssl);
-      _maintainState();
+      await _maintainState();
       await _received.close();
     }
 
@@ -399,7 +402,7 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
       );
 
   @override
-  int send(List<int> data) {
+  Future<int> send(List<int> data) {
     if (state != ConnectionState.connected) {
       throw DtlsException("Sending failed: Not connected!");
     }
@@ -407,7 +410,10 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
     return _dtlsServer._send(this, data);
   }
 
-  void _handleError(int ret, [void Function(Exception)? errorHandler]) {
+  Future<void> _handleError(
+    int ret, [
+    void Function(Exception)? errorHandler,
+  ]) async {
     final code = _libSsl.SSL_get_error(_ssl, ret);
     if (code == SSL_ERROR_SSL) {
       errorHandler?.call(
@@ -418,7 +424,7 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
         ),
       );
     } else if (code == SSL_ERROR_ZERO_RETURN) {
-      close();
+      await close();
     }
   }
 
