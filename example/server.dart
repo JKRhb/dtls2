@@ -4,9 +4,7 @@
 
 // ignore_for_file: avoid_print
 
-import "dart:async";
 import "dart:convert";
-import "dart:io";
 
 import "package:dtls2/dtls2.dart";
 
@@ -30,21 +28,8 @@ Iterable<int>? _serverPskCallback(List<int> identity) {
   return utf8.encode(psk);
 }
 
-final context = DtlsClientContext(
-  withTrustedRoots: true,
-  ciphers: _ciphers,
-  pskCredentialsCallback: (identityHint) {
-    print(identityHint);
-    return PskCredentials(
-      identity: utf8.encode(_identity),
-      preSharedKey: utf8.encode(_preSharedKey),
-    );
-  },
-);
-
 void main() async {
   const bindAddress = "::";
-  final peerAddress = InternetAddress("::1");
   const peerPort = 5684;
 
   final dtlsServer = await DtlsServer.bind(
@@ -73,32 +58,4 @@ void main() async {
     },
     onDone: () => print("Server closed."),
   );
-
-  final dtlsClient = await DtlsClient.bind(bindAddress, 0);
-
-  final DtlsConnection connection;
-  try {
-    connection = await dtlsClient.connect(
-      peerAddress,
-      peerPort,
-      context,
-      timeout: const Duration(seconds: 5),
-    );
-  } on TimeoutException {
-    await dtlsClient.close();
-    rethrow;
-  }
-
-  connection.listen(
-    (datagram) async {
-      print(utf8.decode(datagram.data));
-      await connection.close();
-      print("Client connection closed.");
-    },
-    onDone: () async {
-      await dtlsClient.close();
-      print("Client closed.");
-    },
-  );
-  await connection.send(utf8.encode("Hello World"));
 }
