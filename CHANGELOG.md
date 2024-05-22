@@ -1,3 +1,18 @@
+## 0.17.0
+
+### New Features
+
+- Added standalone server example
+- Made send APIs asynchronous (breaking change)
+- Introduced new requiresClosing state
+
+## Fixes
+
+- Use new requiresClosing state for alert handling
+- Prevent clients t from crashing when using empty PSK
+- Let server actually perform shutdown on connection loss
+- Let client throw SocketException if not connected anymore
+
 ## 0.16.0
 
 ### New Features
