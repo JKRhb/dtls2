@@ -748,6 +748,22 @@ class OpenSsl {
   late final _DTLSv1_listen = _DTLSv1_listenPtr.asFunction<
       int Function(ffi.Pointer<SSL>, ffi.Pointer<BIO_ADDR>)>();
 
+  void SSL_CTX_set_security_level(
+    ffi.Pointer<SSL_CTX> ctx,
+    int level,
+  ) {
+    return _SSL_CTX_set_security_level(
+      ctx,
+      level,
+    );
+  }
+
+  late final _SSL_CTX_set_security_levelPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Pointer<SSL_CTX>, ffi.Int)>>(
+      'SSL_CTX_set_security_level');
+  late final _SSL_CTX_set_security_level = _SSL_CTX_set_security_levelPtr
+      .asFunction<void Function(ffi.Pointer<SSL_CTX>, int)>();
+
   int ERR_get_error() {
     return _ERR_get_error();
   }
