@@ -240,8 +240,8 @@ class _DtlsServerConnection extends Stream<Datagram> with DtlsConnection {
     Pointer<SSL_CTX> _sslContext,
     this._libCrypto,
     this._libSsl,
-  )   : _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
-        _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
+  )   : _rbio = generateBio(_libCrypto),
+        _wbio = generateBio(_libCrypto),
         _bioAddr = _libCrypto.BIO_ADDR_new(),
         _ssl = _libSsl.SSL_new(_sslContext) {
     _libSsl.SSL_set_bio(_ssl, _rbio, _wbio);
