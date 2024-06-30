@@ -38,6 +38,7 @@ Iterable<int>? _serverPskCallback(Iterable<int> identity) {
 final clientContext = DtlsClientContext(
   withTrustedRoots: true,
   ciphers: ciphers,
+  securityLevel: 0,
   pskCredentialsCallback: (receivedIdentityHint) {
     expect(receivedIdentityHint, identityHint);
 
@@ -52,6 +53,7 @@ final serverContext = DtlsServerContext(
   pskKeyStoreCallback: _serverPskCallback,
   ciphers: ciphers,
   identityHint: identityHint,
+  securityLevel: 0,
 );
 
 void main() {
