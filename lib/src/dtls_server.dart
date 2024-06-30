@@ -121,10 +121,10 @@ class DtlsServer extends Stream<DtlsConnection> {
       switch (event) {
         case RawSocketEvent.read:
           await _handleSocketRead();
-          break;
+
         case RawSocketEvent.closed:
           await close();
-          break;
+
         case RawSocketEvent.readClosed:
         case RawSocketEvent.write:
           break;

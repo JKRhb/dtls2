@@ -88,10 +88,9 @@ class DtlsClient {
             }
           }
 
-          break;
         case RawSocketEvent.closed:
           await close();
-          break;
+
         case RawSocketEvent.readClosed:
         case RawSocketEvent.write:
           break;
