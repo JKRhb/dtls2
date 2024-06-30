@@ -122,7 +122,7 @@ void main() {
         const Skip(
           "on macOS, SSL_connct somehow fails. This needs to be fixed.",
         ),
-      ]
+      ],
     },
   );
 
