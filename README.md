@@ -15,7 +15,8 @@ additional features.
 
 The library provides both a client and a server implementation with support
 for DTLS in PKI and PSK mode.
-It is compatible with both OpenSSL 1.1 and OpenSSL 3.
+While only OpenSSL 3 is actively supported and tested with, the library might
+also still be compatible with OpenSSL 1.1.1, although this is not guaranteed.
 
 ## Limitations
 
@@ -27,11 +28,16 @@ the handshake.
 The issue will probably be fixed with the release of OpenSSL 3.2.
 
 To circumvent the problem, you can specify a specific set of ciphers in the
-`DTLSClientContext` (see the example below, where only the cipher
-`PSK-AES128-CCM8` is selected).
+`DTLSClientContext` (see the example in the `examples` directory, where only the
+ cipher `PSK-AES128-CCM8` is selected).
 This will reduce the size of the Client Hello, preventing it from being fragmented.
-See the [OpenSSL documentation](https://www.openssl.org/docs/man1.1.1/man1/ciphers.html#CIPHER-STRINGS)
+See the [OpenSSL documentation](https://www.openssl.org/docs/man3.0/man1/ciphers.html)
 for a full list of available cipher strings.
+
+Note that you might need to also lower the security level for the underlying
+OpenSSL library (via the `securityLevel` parameter in the DTLS context classes)
+to be able to use deprecated ciphers such as `PSK-AES128-CCM8` that might still
+be required to communicate with IoT devices.
 
 ## Getting started
 
