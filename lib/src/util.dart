@@ -1,6 +1,7 @@
 // Copyright (c) 2023 Jan Romann
 // SPDX-License-Identifier: MIT
 
+import "dart:ffi";
 import "dart:io";
 
 import "package:dtls2/src/dtls_connection.dart";
@@ -10,6 +11,15 @@ import "package:dtls2/src/generated/ffi.dart";
 /// connection.
 String getConnectionKey(InternetAddress address, int port) {
   return "${address.address}:$port";
+}
+
+Pointer<BIO> generateBio(OpenSsl libCrypto) {
+  if (libCrypto.OPENSSL_version_major() < 3 ||
+      libCrypto.OPENSSL_version_minor() < 2) {
+    return libCrypto.BIO_new(libCrypto.BIO_s_mem());
+  }
+
+  return libCrypto.BIO_new(libCrypto.BIO_s_dgram_mem());
 }
 
 /// Extension for an easier conversion from [timeval] structs to [Duration]

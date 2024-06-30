@@ -150,6 +150,16 @@ class OpenSsl {
   late final _BIO_s_mem =
       _BIO_s_memPtr.asFunction<ffi.Pointer<BIO_METHOD> Function()>();
 
+  ffi.Pointer<BIO_METHOD> BIO_s_dgram_mem() {
+    return _BIO_s_dgram_mem();
+  }
+
+  late final _BIO_s_dgram_memPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<BIO_METHOD> Function()>>(
+          'BIO_s_dgram_mem');
+  late final _BIO_s_dgram_mem =
+      _BIO_s_dgram_memPtr.asFunction<ffi.Pointer<BIO_METHOD> Function()>();
+
   ffi.Pointer<BIO_ADDR> BIO_ADDR_new() {
     return _BIO_ADDR_new();
   }

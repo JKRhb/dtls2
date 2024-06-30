@@ -241,8 +241,8 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
     this._libSsl,
     this._connectCompleter,
   )   : _ssl = _libSsl.SSL_new(sslContext),
-        _rbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()),
-        _wbio = _libCrypto.BIO_new(_libCrypto.BIO_s_mem()) {
+        _rbio = generateBio(_libCrypto),
+        _wbio = generateBio(_libCrypto) {
     _setBios();
     _setInfoCallback(sslContext);
     _setHostname(hostname);
