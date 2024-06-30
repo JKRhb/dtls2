@@ -40,8 +40,7 @@ jobs:
         run: dart analyze
 
       - name: Install OpenSSL (Windows)
-        run: |
-          choco install openssl --version=3.1.1
+        run: choco install openssl
         if: ${{ matrix.os == 'windows-latest' }}
 
       - name: Run tests with coverage
