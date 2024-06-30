@@ -8,11 +8,11 @@
 /// to provide a fallback or throw their own [Exception]s
 /// if OpenSSL should not be available.
 class OpenSslLoadException implements Exception {
-  /// The actual error message.
-  final String libName;
-
   /// Constructor.
   OpenSslLoadException(this.libName);
+
+  /// The actual error message.
+  final String libName;
 
   @override
   String toString() {

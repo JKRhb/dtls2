@@ -194,14 +194,14 @@ enum AlertDescription {
 ///
 /// Consists of an [alertLevel] and a [alertDescription].
 class DtlsAlert {
+  /// Constructor.
+  DtlsAlert(this.alertLevel, this.alertDescription);
+
   /// The alert level of this alert.
   final AlertLevel alertLevel;
 
   /// The description of this alert.
   final AlertDescription alertDescription;
-
-  /// Constructor.
-  DtlsAlert(this.alertLevel, this.alertDescription);
 
   /// Generates a new [DtlsAlert] from the [code] passed in OpenSSL's info
   /// callback.

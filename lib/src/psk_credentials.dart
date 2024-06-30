@@ -13,12 +13,12 @@ typedef PskCredentialsCallback = PskCredentials Function(
 /// Credentials used for PSK Cipher Suites consisting of an [identity]
 /// and a [preSharedKey].
 class PskCredentials {
+  /// Constructor
+  PskCredentials({required this.identity, required this.preSharedKey});
+
   /// The identity used with the [preSharedKey].
   Iterable<int> identity;
 
   /// The actual pre-shared key.
   Iterable<int> preSharedKey;
-
-  /// Constructor
-  PskCredentials({required this.identity, required this.preSharedKey});
 }

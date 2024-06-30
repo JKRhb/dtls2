@@ -5,9 +5,25 @@ include: package:lint/package.yaml
 analyzer:
   exclude:
     - 'lib/src/generated/ffi.dart'
+  errors:
+    public_member_api_docs: warning
 
+# Adjusted linting rules
 linter:
   rules:
     prefer_double_quotes: true
     unawaited_futures: true
     discarded_futures: true
+    sort_constructors_first: true
+    public_member_api_docs: true
+    comment_references: true
+    unnecessary_lambdas: true
+    lines_longer_than_80_chars: true
+    avoid_catches_without_on_clauses: true
+    use_to_and_as_if_applicable: true
+    avoid_returning_this: true
+    avoid_types_on_closure_parameters: true
+    avoid_slow_async_io: true
+    close_sinks: true
+    cascade_invocations: true
+    only_throw_errors: true

@@ -26,11 +26,11 @@ class DtlsHandshakeException extends DtlsException {
 
 /// [DtlsException] that indicates that a timeout has occured.
 class DtlsTimeoutException extends DtlsException implements TimeoutException {
-  @override
-  final Duration duration;
-
   /// Constructor.
   DtlsTimeoutException(super.message, this.duration);
+
+  @override
+  final Duration duration;
 
   @override
   String toString() => "DtlsTimeoutException after $duration: $message";
