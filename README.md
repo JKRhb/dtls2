@@ -15,7 +15,8 @@ additional features.
 
 The library provides both a client and a server implementation with support
 for DTLS in PKI and PSK mode.
-It is compatible with both OpenSSL 1.1 and OpenSSL 3.
+While only OpenSSL 3 is actively supported and tested with, the library might
+also still be compatible with OpenSSL 1.1.1, although this is not guaranteed.
 
 ## Limitations
 
