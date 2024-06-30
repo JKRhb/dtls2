@@ -18,6 +18,16 @@ final _serverKeyStore = {_identity: _preSharedKey};
 
 const _ciphers = "PSK-AES128-CCM8";
 
+// Needed to still be able to use PSK-AES128-CCM8 as a cipher suite with more
+// recent versions of OpenSSL.
+//
+// In production scenarios, you probably want to use a higher security level
+// and more secure cipher suites instead.
+// For this example, the security level is lowered since `PSK-AES128-CCM8`
+// is the mandatory cipher suite for CoAPS (Constrained Application Protocol,
+// secured with DTLS).
+const securityLevel = 0;
+
 Iterable<int>? _serverPskCallback(List<int> identity) {
   final identityString = utf8.decode(identity);
 
@@ -33,6 +43,7 @@ Iterable<int>? _serverPskCallback(List<int> identity) {
 final context = DtlsClientContext(
   withTrustedRoots: true,
   ciphers: _ciphers,
+  securityLevel: securityLevel,
   pskCredentialsCallback: (identityHint) {
     print(identityHint);
     return PskCredentials(
@@ -54,6 +65,7 @@ void main() async {
       pskKeyStoreCallback: _serverPskCallback,
       ciphers: _ciphers,
       identityHint: "This is the identity hint!",
+      securityLevel: securityLevel,
     ),
   );
 
