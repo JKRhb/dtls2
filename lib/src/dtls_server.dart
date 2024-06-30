@@ -460,6 +460,7 @@ class DtlsServerContext {
     String? ciphers,
     PskKeyStoreCallback? pskKeyStoreCallback,
     String? identityHint,
+    this.securityLevel,
   })  : _pskKeyStoreCallback = pskKeyStoreCallback,
         _withTrustedRoots = withTrustedRoots,
         _verify = verify,
@@ -478,6 +479,14 @@ class DtlsServerContext {
   final String? _ciphers;
 
   final String? _identityHint;
+
+  /// User-provided security level for OpenSSL.
+  ///
+  /// Influences which key lengths and ciphers suites can be used with this DTLS
+  /// context. See the [OpenSSL documentation] for more information.
+  ///
+  /// [OpenSSL documentation]: https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_security_level.html
+  final int? securityLevel;
 
   void _addRoots(
     List<Uint8List> certs,
@@ -543,6 +552,11 @@ class DtlsServerContext {
       final nativeIdentityHint = identityHint.toNativeUtf8();
       libSsl.SSL_CTX_use_psk_identity_hint(ctx, nativeIdentityHint.cast());
       malloc.free(nativeIdentityHint);
+    }
+
+    final securityLevel = this.securityLevel;
+    if (securityLevel != null) {
+      libSsl.SSL_CTX_set_security_level(ctx, securityLevel);
     }
 
     return ctx;

@@ -651,6 +651,7 @@ class DtlsClientContext {
     List<Uint8List> rootCertificates = const [],
     String? ciphers,
     PskCredentialsCallback? pskCredentialsCallback,
+    this.securityLevel,
   })  : _pskCredentialsCallback = pskCredentialsCallback,
         _withTrustedRoots = withTrustedRoots,
         _verify = verify,
@@ -666,6 +667,14 @@ class DtlsClientContext {
   final List<Uint8List> _rootCertificates;
 
   final String? _ciphers;
+
+  /// User-provided security level for OpenSSL.
+  ///
+  /// Influences which key lengths and ciphers suites can be used with this DTLS
+  /// context. See the [OpenSSL documentation] for more information.
+  ///
+  /// [OpenSSL documentation]: https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_security_level.html
+  final int? securityLevel;
 
   void _addRoots(
     List<Uint8List> certs,
@@ -711,6 +720,11 @@ class DtlsClientContext {
       final ciphersStr = ciphers.toNativeUtf8();
       libSsl.SSL_CTX_set_cipher_list(ctx, ciphersStr.cast());
       malloc.free(ciphersStr);
+    }
+
+    final securityLevel = this.securityLevel;
+    if (securityLevel != null) {
+      libSsl.SSL_CTX_set_security_level(ctx, securityLevel);
     }
 
     return ctx;

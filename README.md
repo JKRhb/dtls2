@@ -89,8 +89,6 @@ const _preSharedKey = "secretPSK";
 
 final _serverKeyStore = {_identity: _preSharedKey};
 
-const _ciphers = "PSK-AES128-CCM8";
-
 Uint8List? _serverPskCallback(Uint8List identity) {
   final identityString = utf8.decode(identity.toList());
 
@@ -106,7 +104,6 @@ Uint8List? _serverPskCallback(Uint8List identity) {
 final context = DtlsClientContext(
   verify: true,
   withTrustedRoots: true,
-  ciphers: _ciphers,
   pskCredentialsCallback: (identityHint) {
     return PskCredentials(
       identity: Uint8List.fromList(utf8.encode(_identity)),
@@ -125,7 +122,6 @@ void main() async {
       peerPort,
       DtlsServerContext(
         pskKeyStoreCallback: _serverPskCallback,
-        ciphers: _ciphers,
       ));
 
   dtlsServer.listen(

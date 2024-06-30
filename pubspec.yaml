@@ -80,6 +80,7 @@ ffigen:
       - OPENSSL_version_major
       - OPENSSL_version_minor
       - OPENSSL_version_patch
+      - SSL_CTX_set_security_level
   macros:
     include:
       - BIO_C_SET_BUF_MEM_EOF_RETURN
