@@ -39,6 +39,8 @@ OpenSSL library (via the `securityLevel` parameter in the DTLS context classes)
 to be able to use deprecated ciphers such as `PSK-AES128-CCM8` that might still
 be required to communicate with IoT devices.
 
+test
+
 ## Getting started
 
 The dynamic libraries libssl and libcrypto from OpenSSL need to be available.
