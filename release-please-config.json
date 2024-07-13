@@ -1,6 +1,10 @@
 {
   "release-type": "dart",
   "packages": {
-    ".": {}
+    ".": {
+      "version": "0.17.0",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
+    }
   }
 }
