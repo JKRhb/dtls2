@@ -1,9 +1,5 @@
 {
   "release-type": "dart",
   "bump-minor-pre-major": true,
-  "bump-patch-for-minor-pre-major": true,
-  "packages": {
-    ".": {
-    }
-  }
+  "bump-patch-for-minor-pre-major": true
 }
