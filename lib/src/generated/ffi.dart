@@ -487,6 +487,46 @@ class OpenSsl {
   late final _SSL_set_bio = _SSL_set_bioPtr.asFunction<
       void Function(ffi.Pointer<SSL>, ffi.Pointer<BIO>, ffi.Pointer<BIO>)>();
 
+  int SSL_CTX_use_PrivateKey_file(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<ffi.Char> file,
+    int type,
+  ) {
+    return _SSL_CTX_use_PrivateKey_file(
+      ctx,
+      file,
+      type,
+    );
+  }
+
+  late final _SSL_CTX_use_PrivateKey_filePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>,
+              ffi.Int)>>('SSL_CTX_use_PrivateKey_file');
+  late final _SSL_CTX_use_PrivateKey_file =
+      _SSL_CTX_use_PrivateKey_filePtr.asFunction<
+          int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>, int)>();
+
+  int SSL_CTX_use_certificate_file(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<ffi.Char> file,
+    int type,
+  ) {
+    return _SSL_CTX_use_certificate_file(
+      ctx,
+      file,
+      type,
+    );
+  }
+
+  late final _SSL_CTX_use_certificate_filePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>,
+              ffi.Int)>>('SSL_CTX_use_certificate_file');
+  late final _SSL_CTX_use_certificate_file =
+      _SSL_CTX_use_certificate_filePtr.asFunction<
+          int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>, int)>();
+
   void SSL_CTX_set_verify(
     ffi.Pointer<SSL_CTX> ctx,
     int mode,
@@ -505,6 +545,20 @@ class OpenSsl {
               SSL_verify_cb)>>('SSL_CTX_set_verify');
   late final _SSL_CTX_set_verify = _SSL_CTX_set_verifyPtr.asFunction<
       void Function(ffi.Pointer<SSL_CTX>, int, SSL_verify_cb)>();
+
+  int SSL_CTX_check_private_key(
+    ffi.Pointer<SSL_CTX> ctx,
+  ) {
+    return _SSL_CTX_check_private_key(
+      ctx,
+    );
+  }
+
+  late final _SSL_CTX_check_private_keyPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<SSL_CTX>)>>(
+          'SSL_CTX_check_private_key');
+  late final _SSL_CTX_check_private_key = _SSL_CTX_check_private_keyPtr
+      .asFunction<int Function(ffi.Pointer<SSL_CTX>)>();
 
   ffi.Pointer<SSL> SSL_new(
     ffi.Pointer<SSL_CTX> ctx,
@@ -876,6 +930,8 @@ final class x509_store_ctx_st extends ffi.Opaque {}
 final class stack_st_SSL_CIPHER extends ffi.Opaque {}
 
 const int BIO_C_SET_BUF_MEM_EOF_RETURN = 130;
+
+const int SSL_FILETYPE_PEM = 1;
 
 const int SSL3_AL_FATAL = 2;
 

@@ -81,6 +81,9 @@ ffigen:
       - OPENSSL_version_minor
       - OPENSSL_version_patch
       - SSL_CTX_set_security_level
+      - SSL_CTX_use_certificate_file
+      - SSL_CTX_use_PrivateKey_file
+      - SSL_CTX_check_private_key
   macros:
     include:
       - BIO_C_SET_BUF_MEM_EOF_RETURN
@@ -95,6 +98,7 @@ ffigen:
       - SSL_AD_CLOSE_NOTIFY
       - SSL3_AL_FATAL
       - SSL_AD_UNEXPECTED_MESSAGE
+      - SSL_FILETYPE_PEM
   structs:
     include:
       - timeval
