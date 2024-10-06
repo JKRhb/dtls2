@@ -652,11 +652,16 @@ class DtlsClientContext {
     String? ciphers,
     PskCredentialsCallback? pskCredentialsCallback,
     this.securityLevel,
+    String? clientCertificateFileName,
+    String? clientKeyFileName,
+    this.verifyPrivateKey = false,
   })  : _pskCredentialsCallback = pskCredentialsCallback,
         _withTrustedRoots = withTrustedRoots,
         _verify = verify,
         _rootCertificates = rootCertificates,
-        _ciphers = ciphers;
+        _ciphers = ciphers,
+        _clientCertificateFileName = clientCertificateFileName,
+        _clientKeyFileName = clientKeyFileName;
 
   final bool _withTrustedRoots;
 
@@ -667,6 +672,14 @@ class DtlsClientContext {
   final List<Uint8List> _rootCertificates;
 
   final String? _ciphers;
+
+  final String? _clientCertificateFileName;
+
+  final String? _clientKeyFileName;
+
+  /// Whether the client's private key certificate should be verified when creating
+  /// the context.
+  final bool verifyPrivateKey;
 
   /// User-provided security level for OpenSSL.
   ///
@@ -725,6 +738,30 @@ class DtlsClientContext {
     final securityLevel = this.securityLevel;
     if (securityLevel != null) {
       libSsl.SSL_CTX_set_security_level(ctx, securityLevel);
+    }
+
+    final clientKeyFileName = _clientKeyFileName;
+    if (clientKeyFileName != null) {
+      final result = libSsl.SSL_CTX_use_PrivateKey_file(
+          ctx, clientKeyFileName.toNativeUtf8().cast(), SSL_FILETYPE_PEM);
+
+      if (result <= 0) {
+        throw Exception("Reading in private key file failed.");
+      }
+    }
+
+    final clientCertificateFileName = _clientCertificateFileName;
+    if (clientCertificateFileName != null) {
+      final result = libSsl.SSL_CTX_use_certificate_file(ctx,
+          clientCertificateFileName.toNativeUtf8().cast(), SSL_FILETYPE_PEM);
+
+      if (result <= 0) {
+        throw Exception("Reading in client certificate file failed.");
+      }
+    }
+
+    if (verifyPrivateKey && libSsl.SSL_CTX_check_private_key(ctx) <= 0) {
+      throw Exception("Client certificate verification failed.");
     }
 
     return ctx;
