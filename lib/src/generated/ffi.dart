@@ -150,6 +150,23 @@ class OpenSsl {
   late final _BIO_s_mem =
       _BIO_s_memPtr.asFunction<ffi.Pointer<BIO_METHOD> Function()>();
 
+  ffi.Pointer<BIO> BIO_new_mem_buf(
+    ffi.Pointer<ffi.Void> buf,
+    int len,
+  ) {
+    return _BIO_new_mem_buf(
+      buf,
+      len,
+    );
+  }
+
+  late final _BIO_new_mem_bufPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<BIO> Function(
+              ffi.Pointer<ffi.Void>, ffi.Int)>>('BIO_new_mem_buf');
+  late final _BIO_new_mem_buf = _BIO_new_mem_bufPtr.asFunction<
+      ffi.Pointer<BIO> Function(ffi.Pointer<ffi.Void>, int)>();
+
   ffi.Pointer<BIO_ADDR> BIO_ADDR_new() {
     return _BIO_ADDR_new();
   }
