@@ -86,6 +86,8 @@ ffigen:
       - SSL_CTX_use_PrivateKey_file
       - SSL_CTX_check_private_key
       - PEM_read_bio_X509
+      - d2i_X509
+      - i2d_X509
   macros:
     include:
       - BIO_C_SET_BUF_MEM_EOF_RETURN

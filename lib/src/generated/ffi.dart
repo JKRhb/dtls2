@@ -276,6 +276,24 @@ class OpenSsl {
           ffi.Pointer<pem_password_cb>,
           ffi.Pointer<ffi.Void>)>();
 
+  int i2d_X509(
+    ffi.Pointer<X509> a,
+    ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>> out,
+  ) {
+    return _i2d_X509(
+      a,
+      out,
+    );
+  }
+
+  late final _i2d_X509Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<X509>,
+              ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>)>>('i2d_X509');
+  late final _i2d_X509 = _i2d_X509Ptr.asFunction<
+      int Function(
+          ffi.Pointer<X509>, ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>)>();
+
   void SSL_CTX_set_info_callback(
     ffi.Pointer<SSL_CTX> ctx,
     ffi.Pointer<
