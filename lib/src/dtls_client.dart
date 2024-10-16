@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 import "dart:async";
+import "dart:convert";
 import "dart:ffi";
 import "dart:io";
 import "dart:math";
@@ -633,6 +634,96 @@ class _DtlsClientConnection extends Stream<Datagram> with DtlsConnection {
       );
 }
 
+enum CertificateFormat {
+  pem,
+}
+
+class ClientPrivateKey {
+  ClientPrivateKey(
+    this._bytes, {
+    this.format = CertificateFormat.pem,
+  });
+
+  ClientPrivateKey.fromString(
+    String string, {
+    CertificateFormat format = CertificateFormat.pem,
+  }) : this(
+          utf8.encode(string),
+          format: format,
+        );
+
+  static Future<ClientPrivateKey> fromFile(
+    String path, {
+    CertificateFormat format = CertificateFormat.pem,
+  }) async {
+    final file = File(path);
+    final certificateString = await file.readAsString();
+    final bytes = utf8.encode(certificateString);
+
+    return ClientPrivateKey(bytes, format: format);
+  }
+
+  factory ClientPrivateKey.fromFileSync(
+    String path, {
+    CertificateFormat format = CertificateFormat.pem,
+  }) {
+    final file = File(path);
+    final certificateString = file.readAsStringSync();
+    final bytes = utf8.encode(certificateString);
+
+    return ClientPrivateKey(bytes, format: format);
+  }
+
+  final List<int> _bytes;
+
+  final CertificateFormat format;
+
+  List<int> get bytes => _bytes;
+}
+
+class ClientCertificate {
+  ClientCertificate(
+    this._bytes, {
+    this.format = CertificateFormat.pem,
+  });
+
+  ClientCertificate.fromString(
+    String string, {
+    CertificateFormat format = CertificateFormat.pem,
+  }) : this(
+          utf8.encode(string),
+          format: format,
+        );
+
+  static Future<ClientCertificate> fromFile(
+    String path, {
+    CertificateFormat format = CertificateFormat.pem,
+  }) async {
+    final file = File(path);
+    final certificateString = await file.readAsString();
+    final bytes = utf8.encode(certificateString);
+
+    return ClientCertificate(bytes, format: format);
+  }
+
+  factory ClientCertificate.fromFileSync(
+    String path, {
+    CertificateFormat format = CertificateFormat.pem,
+  }) {
+    final file = File(path);
+    final certificateString = file.readAsStringSync();
+    final bytes = utf8.encode(certificateString);
+
+    return ClientCertificate(bytes, format: format);
+  }
+
+  final List<int> _bytes;
+
+  final CertificateFormat format;
+
+  List<int> get bytes => _bytes;
+}
+
 /// The context contains settings for DTLS session establishment.
 ///
 /// Wrapper for `SSL_CTX`.
@@ -653,16 +744,16 @@ class DtlsClientContext {
     String? ciphers,
     PskCredentialsCallback? pskCredentialsCallback,
     this.securityLevel,
-    String? clientCertificateFileName,
-    String? clientKeyFileName,
+    ClientCertificate? clientCertificate,
+    ClientPrivateKey? clientPrivateKey,
     this.verifyPrivateKey = false,
   })  : _pskCredentialsCallback = pskCredentialsCallback,
         _withTrustedRoots = withTrustedRoots,
         _verify = verify,
         _rootCertificates = rootCertificates,
         _ciphers = ciphers,
-        _clientCertificateFileName = clientCertificateFileName,
-        _clientKeyFileName = clientKeyFileName;
+        _clientCertificate = clientCertificate,
+        _clientPrivateKey = clientPrivateKey;
 
   final bool _withTrustedRoots;
 
@@ -674,9 +765,9 @@ class DtlsClientContext {
 
   final String? _ciphers;
 
-  final String? _clientCertificateFileName;
+  final ClientCertificate? _clientCertificate;
 
-  final String? _clientKeyFileName;
+  final ClientPrivateKey? _clientPrivateKey;
 
   /// Whether the client's private key certificate should be verified when creating
   /// the context.
@@ -751,28 +842,45 @@ class DtlsClientContext {
       malloc.free(ciphersStr);
     }
 
+    final clientCertificate = _clientCertificate;
+    if (clientCertificate != null) {
+      final certificateBytes = clientCertificate._bytes;
+      buffer.asTypedList(bufferSize).setAll(0, certificateBytes);
+      final certBio =
+          libSsl.BIO_new_mem_buf(buffer.cast(), certificateBytes.length);
+
+      final certificatePointer =
+          libSsl.PEM_read_bio_X509(certBio, nullptr, nullptr, nullptr);
+
+      libSsl.BIO_free(certBio);
+
+      if (certificatePointer == nullptr) {
+        throw Exception("Reading in client certificate file failed.");
+      }
+
+      libSsl.SSL_CTX_use_certificate(ctx, certificatePointer);
+    }
+
     final securityLevel = this.securityLevel;
     if (securityLevel != null) {
       libSsl.SSL_CTX_set_security_level(ctx, securityLevel);
     }
 
-    final clientKeyFileName = _clientKeyFileName;
-    if (clientKeyFileName != null) {
-      final result = libSsl.SSL_CTX_use_PrivateKey_file(
-          ctx, clientKeyFileName.toNativeUtf8().cast(), SSL_FILETYPE_PEM);
+    final clientPrivateKey = _clientPrivateKey;
+    if (clientPrivateKey != null) {
+      final privateKeyBytes = clientPrivateKey._bytes;
+      buffer.asTypedList(bufferSize).setAll(0, privateKeyBytes);
+      final keyBio =
+          libSsl.BIO_new_mem_buf(buffer.cast(), privateKeyBytes.length);
+
+      final readPrivateKey =
+          libSsl.PEM_read_bio_PrivateKey(keyBio, nullptr, nullptr, nullptr);
+      final result = libSsl.SSL_CTX_use_PrivateKey(ctx, readPrivateKey);
+
+      libSsl.BIO_free(keyBio);
 
       if (result <= 0) {
         throw Exception("Reading in private key file failed.");
-      }
-    }
-
-    final clientCertificateFileName = _clientCertificateFileName;
-    if (clientCertificateFileName != null) {
-      final result = libSsl.SSL_CTX_use_certificate_file(ctx,
-          clientCertificateFileName.toNativeUtf8().cast(), SSL_FILETYPE_PEM);
-
-      if (result <= 0) {
-        throw Exception("Reading in client certificate file failed.");
       }
     }
 
