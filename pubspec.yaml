@@ -84,8 +84,12 @@ ffigen:
       - SSL_CTX_use_certificate_file
       - SSL_CTX_use_PrivateKey_file
       - SSL_CTX_check_private_key
+      - SSL_CTX_use_PrivateKey
+      - SSL_CTX_use_certificate
       - d2i_X509
       - i2d_X509
+      - PEM_read_bio_X509
+      - PEM_read_bio_PrivateKey
       - BIO_new_mem_buf
   macros:
     include:
