@@ -150,6 +150,23 @@ class OpenSsl {
   late final _BIO_s_mem =
       _BIO_s_memPtr.asFunction<ffi.Pointer<BIO_METHOD> Function()>();
 
+  ffi.Pointer<BIO> BIO_new_mem_buf(
+    ffi.Pointer<ffi.Void> buf,
+    int len,
+  ) {
+    return _BIO_new_mem_buf(
+      buf,
+      len,
+    );
+  }
+
+  late final _BIO_new_mem_bufPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<BIO> Function(
+              ffi.Pointer<ffi.Void>, ffi.Int)>>('BIO_new_mem_buf');
+  late final _BIO_new_mem_buf = _BIO_new_mem_bufPtr.asFunction<
+      ffi.Pointer<BIO> Function(ffi.Pointer<ffi.Void>, int)>();
+
   ffi.Pointer<BIO_ADDR> BIO_ADDR_new() {
     return _BIO_ADDR_new();
   }
@@ -247,6 +264,80 @@ class OpenSsl {
   late final _d2i_X509 = _d2i_X509Ptr.asFunction<
       ffi.Pointer<X509> Function(ffi.Pointer<ffi.Pointer<X509>>,
           ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>, int)>();
+
+  int i2d_X509(
+    ffi.Pointer<X509> a,
+    ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>> out,
+  ) {
+    return _i2d_X509(
+      a,
+      out,
+    );
+  }
+
+  late final _i2d_X509Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<X509>,
+              ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>)>>('i2d_X509');
+  late final _i2d_X509 = _i2d_X509Ptr.asFunction<
+      int Function(
+          ffi.Pointer<X509>, ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>)>();
+
+  ffi.Pointer<X509> PEM_read_bio_X509(
+    ffi.Pointer<BIO> out,
+    ffi.Pointer<ffi.Pointer<X509>> x,
+    ffi.Pointer<pem_password_cb> cb,
+    ffi.Pointer<ffi.Void> u,
+  ) {
+    return _PEM_read_bio_X509(
+      out,
+      x,
+      cb,
+      u,
+    );
+  }
+
+  late final _PEM_read_bio_X509Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<X509> Function(
+              ffi.Pointer<BIO>,
+              ffi.Pointer<ffi.Pointer<X509>>,
+              ffi.Pointer<pem_password_cb>,
+              ffi.Pointer<ffi.Void>)>>('PEM_read_bio_X509');
+  late final _PEM_read_bio_X509 = _PEM_read_bio_X509Ptr.asFunction<
+      ffi.Pointer<X509> Function(
+          ffi.Pointer<BIO>,
+          ffi.Pointer<ffi.Pointer<X509>>,
+          ffi.Pointer<pem_password_cb>,
+          ffi.Pointer<ffi.Void>)>();
+
+  ffi.Pointer<EVP_PKEY> PEM_read_bio_PrivateKey(
+    ffi.Pointer<BIO> out,
+    ffi.Pointer<ffi.Pointer<EVP_PKEY>> x,
+    ffi.Pointer<pem_password_cb> cb,
+    ffi.Pointer<ffi.Void> u,
+  ) {
+    return _PEM_read_bio_PrivateKey(
+      out,
+      x,
+      cb,
+      u,
+    );
+  }
+
+  late final _PEM_read_bio_PrivateKeyPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<EVP_PKEY> Function(
+              ffi.Pointer<BIO>,
+              ffi.Pointer<ffi.Pointer<EVP_PKEY>>,
+              ffi.Pointer<pem_password_cb>,
+              ffi.Pointer<ffi.Void>)>>('PEM_read_bio_PrivateKey');
+  late final _PEM_read_bio_PrivateKey = _PEM_read_bio_PrivateKeyPtr.asFunction<
+      ffi.Pointer<EVP_PKEY> Function(
+          ffi.Pointer<BIO>,
+          ffi.Pointer<ffi.Pointer<EVP_PKEY>>,
+          ffi.Pointer<pem_password_cb>,
+          ffi.Pointer<ffi.Void>)>();
 
   void SSL_CTX_set_info_callback(
     ffi.Pointer<SSL_CTX> ctx,
@@ -487,6 +578,46 @@ class OpenSsl {
   late final _SSL_set_bio = _SSL_set_bioPtr.asFunction<
       void Function(ffi.Pointer<SSL>, ffi.Pointer<BIO>, ffi.Pointer<BIO>)>();
 
+  int SSL_CTX_use_PrivateKey_file(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<ffi.Char> file,
+    int type,
+  ) {
+    return _SSL_CTX_use_PrivateKey_file(
+      ctx,
+      file,
+      type,
+    );
+  }
+
+  late final _SSL_CTX_use_PrivateKey_filePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>,
+              ffi.Int)>>('SSL_CTX_use_PrivateKey_file');
+  late final _SSL_CTX_use_PrivateKey_file =
+      _SSL_CTX_use_PrivateKey_filePtr.asFunction<
+          int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>, int)>();
+
+  int SSL_CTX_use_certificate_file(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<ffi.Char> file,
+    int type,
+  ) {
+    return _SSL_CTX_use_certificate_file(
+      ctx,
+      file,
+      type,
+    );
+  }
+
+  late final _SSL_CTX_use_certificate_filePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>,
+              ffi.Int)>>('SSL_CTX_use_certificate_file');
+  late final _SSL_CTX_use_certificate_file =
+      _SSL_CTX_use_certificate_filePtr.asFunction<
+          int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<ffi.Char>, int)>();
+
   void SSL_CTX_set_verify(
     ffi.Pointer<SSL_CTX> ctx,
     int mode,
@@ -505,6 +636,54 @@ class OpenSsl {
               SSL_verify_cb)>>('SSL_CTX_set_verify');
   late final _SSL_CTX_set_verify = _SSL_CTX_set_verifyPtr.asFunction<
       void Function(ffi.Pointer<SSL_CTX>, int, SSL_verify_cb)>();
+
+  int SSL_CTX_use_PrivateKey(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<EVP_PKEY> pkey,
+  ) {
+    return _SSL_CTX_use_PrivateKey(
+      ctx,
+      pkey,
+    );
+  }
+
+  late final _SSL_CTX_use_PrivateKeyPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<SSL_CTX>,
+              ffi.Pointer<EVP_PKEY>)>>('SSL_CTX_use_PrivateKey');
+  late final _SSL_CTX_use_PrivateKey = _SSL_CTX_use_PrivateKeyPtr.asFunction<
+      int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<EVP_PKEY>)>();
+
+  int SSL_CTX_use_certificate(
+    ffi.Pointer<SSL_CTX> ctx,
+    ffi.Pointer<X509> x,
+  ) {
+    return _SSL_CTX_use_certificate(
+      ctx,
+      x,
+    );
+  }
+
+  late final _SSL_CTX_use_certificatePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<SSL_CTX>,
+              ffi.Pointer<X509>)>>('SSL_CTX_use_certificate');
+  late final _SSL_CTX_use_certificate = _SSL_CTX_use_certificatePtr.asFunction<
+      int Function(ffi.Pointer<SSL_CTX>, ffi.Pointer<X509>)>();
+
+  int SSL_CTX_check_private_key(
+    ffi.Pointer<SSL_CTX> ctx,
+  ) {
+    return _SSL_CTX_check_private_key(
+      ctx,
+    );
+  }
+
+  late final _SSL_CTX_check_private_keyPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<SSL_CTX>)>>(
+          'SSL_CTX_check_private_key');
+  late final _SSL_CTX_check_private_key = _SSL_CTX_check_private_keyPtr
+      .asFunction<int Function(ffi.Pointer<SSL_CTX>)>();
 
   ffi.Pointer<SSL> SSL_new(
     ffi.Pointer<SSL_CTX> ctx,
@@ -824,6 +1003,13 @@ typedef X509_VERIFY_PARAM = X509_VERIFY_PARAM_st;
 
 final class X509_VERIFY_PARAM_st extends ffi.Opaque {}
 
+typedef pem_password_cb = ffi.NativeFunction<
+    ffi.Int Function(ffi.Pointer<ffi.Char> buf, ffi.Int size, ffi.Int rwflag,
+        ffi.Pointer<ffi.Void> userdata)>;
+typedef EVP_PKEY = evp_pkey_st;
+
+final class evp_pkey_st extends ffi.Opaque {}
+
 typedef SSL_CTX = ssl_ctx_st;
 
 final class ssl_ctx_st extends ffi.Opaque {}
@@ -876,6 +1062,8 @@ final class x509_store_ctx_st extends ffi.Opaque {}
 final class stack_st_SSL_CIPHER extends ffi.Opaque {}
 
 const int BIO_C_SET_BUF_MEM_EOF_RETURN = 130;
+
+const int SSL_FILETYPE_PEM = 1;
 
 const int SSL3_AL_FATAL = 2;
 
