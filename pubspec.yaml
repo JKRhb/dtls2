@@ -39,6 +39,7 @@ ffigen:
       - BIO_new
       - BIO_read
       - BIO_s_mem
+      - BIO_s_dgram_mem
       - BIO_write
       - BIO_free
       - BIO_ADDR_new
