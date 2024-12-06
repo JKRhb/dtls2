@@ -5,6 +5,7 @@
 /// A DTLS library for Dart, implemented via FFI bindings to OpenSSL.
 library dtls2;
 
+export "src/certificate.dart";
 export "src/dtls_client.dart";
 export "src/dtls_connection.dart";
 export "src/dtls_exception.dart";
