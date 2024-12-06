@@ -248,6 +248,34 @@ class OpenSsl {
       ffi.Pointer<X509> Function(ffi.Pointer<ffi.Pointer<X509>>,
           ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>, int)>();
 
+  ffi.Pointer<X509> PEM_read_bio_X509(
+    ffi.Pointer<BIO> out,
+    ffi.Pointer<ffi.Pointer<X509>> x,
+    ffi.Pointer<pem_password_cb> cb,
+    ffi.Pointer<ffi.Void> u,
+  ) {
+    return _PEM_read_bio_X509(
+      out,
+      x,
+      cb,
+      u,
+    );
+  }
+
+  late final _PEM_read_bio_X509Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<X509> Function(
+              ffi.Pointer<BIO>,
+              ffi.Pointer<ffi.Pointer<X509>>,
+              ffi.Pointer<pem_password_cb>,
+              ffi.Pointer<ffi.Void>)>>('PEM_read_bio_X509');
+  late final _PEM_read_bio_X509 = _PEM_read_bio_X509Ptr.asFunction<
+      ffi.Pointer<X509> Function(
+          ffi.Pointer<BIO>,
+          ffi.Pointer<ffi.Pointer<X509>>,
+          ffi.Pointer<pem_password_cb>,
+          ffi.Pointer<ffi.Void>)>();
+
   void SSL_CTX_set_info_callback(
     ffi.Pointer<SSL_CTX> ctx,
     ffi.Pointer<
@@ -824,6 +852,9 @@ typedef X509_VERIFY_PARAM = X509_VERIFY_PARAM_st;
 
 final class X509_VERIFY_PARAM_st extends ffi.Opaque {}
 
+typedef pem_password_cb = ffi.NativeFunction<
+    ffi.Int Function(ffi.Pointer<ffi.Char> buf, ffi.Int size, ffi.Int rwflag,
+        ffi.Pointer<ffi.Void> userdata)>;
 typedef SSL_CTX = ssl_ctx_st;
 
 final class ssl_ctx_st extends ffi.Opaque {}
