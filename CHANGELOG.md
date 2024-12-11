@@ -1,3 +1,32 @@
+## [0.18.0](https://github.com/JKRhb/dtls2/compare/v0.17.0...v0.18.0) (2024-12-11)
+
+### ⚠ BREAKING CHANGES
+
+* add support for PEM root certificates
+* update dependencies
+* increase minimal Dart SDK version to 3.0.0
+
+### Features
+
+* add bindings for PEM_read_bio_X509 ([a589c7a](https://github.com/JKRhb/dtls2/commit/a589c7a4cb09f99a5100dc079bfa26c186607172))
+* add dedicated certificate classes ([2c496c0](https://github.com/JKRhb/dtls2/commit/2c496c05b0f5561c59991161145314d1a3c9c20f))
+* add security level parameter to DTLS contexts ([25ed88f](https://github.com/JKRhb/dtls2/commit/25ed88ffe8720e5e35517b6b7f25e0bdad962477))
+* add support for PEM root certificates ([61131e7](https://github.com/JKRhb/dtls2/commit/61131e7d88ccc85ec240d67051141dbaa88ba3b6))
+* generate binding for SSL_CTX_set_security_level ([445c6e6](https://github.com/JKRhb/dtls2/commit/445c6e6d9115e05d066d2159917f93f8cc9d9a17))
+* regenerate bindings ([7075590](https://github.com/JKRhb/dtls2/commit/7075590c089150081116cca3f0088b9850bfe7e0))
+
+
+### Bug Fixes
+
+* lower security level for main example ([274edfa](https://github.com/JKRhb/dtls2/commit/274edfac42b432d87bf34018e32ea01314f38e87))
+
+
+### Miscellaneous Chores
+
+* fix release please configuration ([317b92f](https://github.com/JKRhb/dtls2/commit/317b92f13a5031d0765839085b25da95e55c4d9b))
+* increase minimal Dart SDK version to 3.0.0 ([a4e421b](https://github.com/JKRhb/dtls2/commit/a4e421b50575d8f8e1780ff4db63dda5cc25e3fa))
+* update dependencies ([9894b2b](https://github.com/JKRhb/dtls2/commit/9894b2bb654f450451ac4fa1f378d30fe3b3cdf3))
+
 ## 0.17.0
 
 ### New Features
