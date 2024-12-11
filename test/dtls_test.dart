@@ -11,6 +11,8 @@ import "package:dtls2/dtls2.dart";
 import "package:dtls2/src/dtls_alert.dart";
 import "package:test/test.dart";
 
+import "certs.dart";
+
 const ciphers = "PSK-AES128-CCM8";
 
 const identity = "Client_identity";
@@ -22,6 +24,10 @@ const preSharedKey = "secretPSK";
 final serverKeyStore = {identity: preSharedKey};
 
 final bindAddress = InternetAddress.anyIPv4;
+
+final pemCertificate = PemCertificate(rawPemCertificate);
+
+final derCertificate = DerCertificate(Uint8List.fromList(rawDerCertificate));
 
 Iterable<int>? _serverPskCallback(Iterable<int> identity) {
   final identityString = utf8.decode(identity.toList());
@@ -47,6 +53,10 @@ final clientContext = DtlsClientContext(
       preSharedKey: Uint8List.fromList(utf8.encode(preSharedKey)),
     );
   },
+  rootCertificates: [
+    pemCertificate,
+    derCertificate,
+  ],
 );
 
 final serverContext = DtlsServerContext(
@@ -54,6 +64,10 @@ final serverContext = DtlsServerContext(
   ciphers: ciphers,
   identityHint: identityHint,
   securityLevel: 0,
+  rootCertificates: [
+    pemCertificate,
+    derCertificate,
+  ],
 );
 
 void main() {

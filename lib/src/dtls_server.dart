@@ -10,6 +10,7 @@ import "dart:typed_data";
 
 import "package:collection/collection.dart";
 import "package:dtls2/src/buffer.dart";
+import "package:dtls2/src/certificate.dart";
 import "package:dtls2/src/dtls_alert.dart";
 import "package:dtls2/src/dtls_connection.dart";
 import "package:dtls2/src/dtls_exception.dart";
@@ -34,7 +35,10 @@ class DtlsServer extends Stream<DtlsConnection> {
     this._context, {
     DynamicLibrary? libSsl,
     DynamicLibrary? libCrypto,
-  })  : _sslContext = _context._generateSslContext(loadLibSsl(libSsl)),
+  })  : _sslContext = _context._generateSslContext(
+          loadLibSsl(libSsl),
+          loadLibCrypto(libCrypto),
+        ),
         _libCrypto = loadLibCrypto(libCrypto),
         _libSsl = loadLibSsl(libSsl) {
     _setCallbacks();
@@ -456,7 +460,7 @@ class DtlsServerContext {
   DtlsServerContext({
     bool verify = true,
     bool withTrustedRoots = false,
-    List<Uint8List> rootCertificates = const [],
+    List<Certificate> rootCertificates = const [],
     String? ciphers,
     PskKeyStoreCallback? pskKeyStoreCallback,
     String? identityHint,
@@ -474,7 +478,7 @@ class DtlsServerContext {
 
   final PskKeyStoreCallback? _pskKeyStoreCallback;
 
-  final List<Uint8List> _rootCertificates;
+  final List<Certificate> _rootCertificates;
 
   final String? _ciphers;
 
@@ -489,21 +493,33 @@ class DtlsServerContext {
   final int? securityLevel;
 
   void _addRoots(
-    List<Uint8List> certs,
+    List<Certificate> certs,
     Pointer<SSL_CTX> ctx,
     OpenSsl libSsl,
+    OpenSsl libCrypto,
   ) {
     if (certs.isEmpty) return;
-    final bufLen = certs.map((c) => c.length).reduce(max);
+    final bufLen = certs.map((c) => c.bytes.length).reduce(max);
     final buf = malloc.call<UnsignedChar>(bufLen);
     final data = malloc.call<Pointer<UnsignedChar>>();
     final store = libSsl.SSL_CTX_get_cert_store(ctx);
 
     for (final cert in certs) {
-      buf.cast<Uint8>().asTypedList(bufLen).setAll(0, cert);
+      buf.cast<Uint8>().asTypedList(bufLen).setAll(0, cert.bytes);
       data.value = buf;
-      final opensslCert = libSsl.d2i_X509(nullptr, data, cert.length);
-      libSsl
+      final Pointer<X509> opensslCert;
+      switch (cert) {
+        case DerCertificate(:final bytes):
+          opensslCert = libCrypto.d2i_X509(nullptr, data, bytes.length);
+        case PemCertificate(:final bytes):
+          final bio = libCrypto.BIO_new(libCrypto.BIO_s_mem());
+          libCrypto.BIO_write(bio, buf.cast(), bytes.length);
+          opensslCert =
+              libCrypto.PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+          libCrypto.BIO_free(bio);
+      }
+
+      libCrypto
         ..X509_STORE_add_cert(store, opensslCert)
         ..X509_free(opensslCert);
     }
@@ -513,14 +529,14 @@ class DtlsServerContext {
       ..free(buf);
   }
 
-  Pointer<SSL_CTX> _generateSslContext(OpenSsl libSsl) {
+  Pointer<SSL_CTX> _generateSslContext(OpenSsl libSsl, OpenSsl libCrypto) {
     final ctx = libSsl.SSL_CTX_new(libSsl.DTLS_server_method());
 
     if (_withTrustedRoots) {
       libSsl.SSL_CTX_set_default_verify_paths(ctx);
     }
 
-    _addRoots(_rootCertificates, ctx, libSsl);
+    _addRoots(_rootCertificates, ctx, libSsl, libCrypto);
     libSsl.SSL_CTX_set_verify(
       ctx,
       _verify ? SSL_VERIFY_PEER : SSL_VERIFY_NONE,

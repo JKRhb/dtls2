@@ -13,6 +13,7 @@ environment:
 dependencies:
   collection: ^1.18.0
   ffi: ^2.1.2
+  meta: ^1.16.0
 
 dev_dependencies:
   ffigen: ^12.0.0
@@ -81,6 +82,7 @@ ffigen:
       - OPENSSL_version_minor
       - OPENSSL_version_patch
       - SSL_CTX_set_security_level
+      - PEM_read_bio_X509
   macros:
     include:
       - BIO_C_SET_BUF_MEM_EOF_RETURN
