@@ -1,3 +1,9 @@
+## [0.18.1](https://github.com/JKRhb/dtls2/compare/v0.18.0...v0.18.1) (2024-12-13)
+
+### Bug Fixes
+
+* downgrade meta package ([421a17b](https://github.com/JKRhb/dtls2/commit/421a17b78c88a79957ad39e4112bc2edcee45694))
+
 ## [0.18.0](https://github.com/JKRhb/dtls2/compare/v0.17.0...v0.18.0) (2024-12-11)
 
 ### ⚠ BREAKING CHANGES
