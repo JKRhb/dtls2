@@ -10,8 +10,11 @@ import "package:dtls2/src/openssl_load_exception.dart";
 
 OpenSsl _loadLibrary(List<String> libNames, String libName) {
   for (final libName in libNames) {
-    if (File(libName).existsSync()) {
+    try {
       return OpenSsl(DynamicLibrary.open(libName));
+      // ignore: avoid_catching_errors
+    } on ArgumentError {
+      continue;
     }
   }
 
